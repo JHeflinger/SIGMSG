@@ -1,0 +1,6 @@
+PROJECT src
+MAIN main.c
+WINDOWS LINK winpthread
+WINDOWS LINK ws2_32
+INCLUDE vendor/EasyC/include
+SOURCE vendor/EasyC/include
