@@ -36,13 +36,8 @@ void Listen() {
     while (g_running) {
         int ch = getch();
         Event e = { 0 };
-		#ifdef __WIN32
+		if (ch == KEY_RESIZE) e.resize = TRUE;
         if (ch == KEY_MOUSE) {
-		#elif __linux__
-        if (ch == 409) {
-		#else
-			#error "Unsupported operating system detected!"
-		#endif
             MEVENT me;
 			#ifdef __WIN32
             if (nc_getmouse(&me) == OK) {
@@ -116,7 +111,7 @@ void Stop() {
 void ChangeState(AppState state) {
     g_state = state;
     Event e = { 0 };
-    e.empty = TRUE;
+    e.resize = TRUE;
     state(e);
 }
 

@@ -9,7 +9,7 @@
 void LoginState(Event event) {
     int height, width;
     getmaxyx(stdscr, height, width);
-    if (event.empty) {
+    if (event.resize) {
         clear();
         move(height/2 - 7, width/2 - 29);
         attron(COLOR_PAIR(RED_BLACK));
@@ -47,7 +47,7 @@ void LoginState(Event event) {
         refresh();
         Stop();
     } else if (event.mevent.type == MOUSE_LEFT_CLICK || event.mevent.type == MOUSE_LEFT_DOWN) {
-        if (mcollide(event, 36, 31, 20, 3)) {
+		if (mcollide(event, width/2 - 9, height/2 + 5, 18, 3)) {
             clear();
             refresh();
             Stop();

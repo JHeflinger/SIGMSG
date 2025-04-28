@@ -29,7 +29,7 @@ typedef struct {
 typedef struct {
     MouseEvent mevent;
     char kevent;
-    BOOL empty;
+    BOOL resize;
 } Event;
 
 typedef void (*AppState)(Event);
