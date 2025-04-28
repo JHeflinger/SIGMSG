@@ -4,6 +4,7 @@ WINDOWS LINK winpthread
 WINDOWS LINK ws2_32
 INCLUDE vendor/EasyC/include
 SOURCE vendor/EasyC/include
-INCLUDE vendor/PDCurses/include
-LIB vendor/PDCurses/lib
+WINDOWS INCLUDE vendor/PDCurses/include
+WINDOWS LIB vendor/PDCurses/lib
 WINDOWS LINK :pdcurses.a
+LINUX LINK ncurses

@@ -4,7 +4,8 @@
 #include "states/login.h"
 #include "core/platform.h"
 #include <easynet.h>
-#include <curses.h>
+#include <string.h>
+#include <easylogger.h>
 
 AppState g_state;
 AppFlags g_flags;
@@ -13,6 +14,7 @@ BOOL g_running = TRUE;
 void Initialize() {
     EZ_INIT_NETWORK();
     initscr();
+	start_color();
     raw();
     cbreak();
     noecho();
@@ -20,7 +22,6 @@ void Initialize() {
     mousemask(ALL_MOUSE_EVENTS, NULL);
     timeout(-1);
     scrollok(stdscr, TRUE);
-    start_color();
     InitializeColors();
     if (!(g_flags & NO_BOOT_ANIM)) BootAnimation();
     ChangeState(LoginState);
@@ -35,9 +36,21 @@ void Listen() {
     while (g_running) {
         int ch = getch();
         Event e = { 0 };
+		#ifdef __WIN32
         if (ch == KEY_MOUSE) {
+		#elif __linux__
+        if (ch == 409) {
+		#else
+			#error "Unsupported operating system detected!"
+		#endif
             MEVENT me;
+			#ifdef __WIN32
             if (nc_getmouse(&me) == OK) {
+			#elif __linux__
+			if (getmouse(&me) == OK) {
+			#else
+				#error "Unsupported operating system detected!"
+			#endif
                 e.mevent.x = me.x;
                 e.mevent.y = me.y;
                 e.mevent.type = MOUSE_MOVE;

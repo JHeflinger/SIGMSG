@@ -6,13 +6,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#include <curses.h>
 
 void Wait(size_t milliseconds) {
     #ifdef __WIN32
         Sleep(milliseconds);
     #elif __linux__
-        usleep(milliseconds);
+        usleep(milliseconds * 1000);
     #else
         #error "Operating system not supported"
     #endif

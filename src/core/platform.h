@@ -45,11 +45,13 @@
 #define NOMCX             // Modem Configuration Extensions
 
 #include <windows.h>
+#include <curses.h>
 
 #elif __linux__
 
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <ncurses.h>
 
 #else
     #error "Operating system not supported"

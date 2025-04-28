@@ -1295,7 +1295,12 @@ PDCEX  int     mouse_on(mmask_t);
 PDCEX  int     mouse_off(mmask_t);
 PDCEX  int     request_mouse_pos(void);
 PDCEX  void    wmouse_position(WINDOW *, int *, int *);
+// Jason Heflinger: added for ncurses compatibility
+#ifdef __linux__
+PDCEX  int     getmouse(MEVENT *);
+#else
 PDCEX  mmask_t getmouse(void);
+#endif
 
 /* ncurses */
 
