@@ -5,11 +5,18 @@
 
 typedef enum {
     MOUSE_NONE = 0,
-    MOUSE_LEFT,
-    MOUSE_RIGHT,
-    MOUSE_UP,
-    MOUSE_MOVE,
+    MOUSE_LEFT_DOWN,
+    MOUSE_MIDDLE_DOWN,
+    MOUSE_RIGHT_DOWN,
+    MOUSE_LEFT_CLICK,
+    MOUSE_MIDDLE_CLICK,
+    MOUSE_RIGHT_CLICK,
+    MOUSE_LEFT_UP,
+    MOUSE_MIDDLE_UP,
+    MOUSE_RIGHT_UP,
     MOUSE_SCROLL,
+    MOUSE_MOVE,
+    MOUSE_OTHER
 } MouseEventType;
 
 typedef struct {

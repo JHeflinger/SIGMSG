@@ -1,8 +1,10 @@
 #include "app.h"
+#include "util/colors.h"
 #include "util/animations.h"
 #include "states/login.h"
 #include "core/platform.h"
 #include <easynet.h>
+#include <curses.h>
 
 AppState g_state;
 AppFlags g_flags;
@@ -10,58 +12,79 @@ BOOL g_running = TRUE;
 
 void Initialize() {
     EZ_INIT_NETWORK();
+    initscr();
+    raw();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+    mousemask(ALL_MOUSE_EVENTS, NULL);
+    timeout(-1);
+    scrollok(stdscr, TRUE);
+    start_color();
+    InitializeColors();
     if (!(g_flags & NO_BOOT_ANIM)) BootAnimation();
     ChangeState(LoginState);
 }
 
 void Clean() {
+    endwin();
     EZ_CLEAN_NETWORK();
 }
 
 void Listen() {
-    #ifdef __WIN32
-        HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
-        DWORD mode;
-        GetConsoleMode(hStdin, &mode);
-        mode = ENABLE_EXTENDED_FLAGS;
-        SetConsoleMode(hStdin, mode);
-        mode = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT;
-        SetConsoleMode(hStdin, mode);
-        INPUT_RECORD record;
-        DWORD events;
-        while (g_running) {
-            ReadConsoleInput(hStdin, &record, 1, &events);
-            Event e = { 0 };
-            if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown) {
-                e.kevent = record.Event.KeyEvent.uChar.AsciiChar;
-            }
-            if (record.EventType == MOUSE_EVENT) {
-                MOUSE_EVENT_RECORD me = record.Event.MouseEvent;
-                e.mevent.x = me.dwMousePosition.X;
-                e.mevent.y = me.dwMousePosition.Y;
+    while (g_running) {
+        int ch = getch();
+        Event e = { 0 };
+        if (ch == KEY_MOUSE) {
+            MEVENT me;
+            if (nc_getmouse(&me) == OK) {
+                e.mevent.x = me.x;
+                e.mevent.y = me.y;
                 e.mevent.type = MOUSE_MOVE;
-                if (me.dwEventFlags == 0) {
-                    e.mevent.type = MOUSE_UP;
-                    if (me.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED) {
-                        e.mevent.type = MOUSE_LEFT;
-                    } else if (me.dwButtonState & RIGHTMOST_BUTTON_PRESSED) {
-                        e.mevent.type = MOUSE_RIGHT;
-                    }
-                } else if (me.dwEventFlags == MOUSE_WHEELED) {
+                if (me.bstate & BUTTON1_PRESSED) {
+                    e.mevent.type = MOUSE_LEFT_DOWN;
+                }
+                if (me.bstate & BUTTON2_PRESSED) {
+                    e.mevent.type = MOUSE_MIDDLE_DOWN;
+                }
+                if (me.bstate & BUTTON3_PRESSED) {
+                    e.mevent.type = MOUSE_RIGHT_DOWN;
+                }
+                if (me.bstate & BUTTON1_RELEASED) {
+                    e.mevent.type = MOUSE_LEFT_UP;
+                }
+                if (me.bstate & BUTTON2_RELEASED) {
+                    e.mevent.type = MOUSE_MIDDLE_UP;
+                }
+                if (me.bstate & BUTTON3_RELEASED) {
+                    e.mevent.type = MOUSE_RIGHT_UP;
+                }
+                if (me.bstate & BUTTON1_CLICKED) {
+                    e.mevent.type = MOUSE_LEFT_CLICK;
+                }
+                if (me.bstate & BUTTON2_CLICKED) {
+                    e.mevent.type = MOUSE_MIDDLE_CLICK;
+                }
+                if (me.bstate & BUTTON3_CLICKED) {
+                    e.mevent.type = MOUSE_RIGHT_CLICK;
+                }
+                if (me.bstate & BUTTON4_PRESSED) {
                     e.mevent.type = MOUSE_SCROLL;
-                    e.mevent.delta = (SHORT)HIWORD(record.Event.MouseEvent.dwButtonState);
+                    e.mevent.delta = 1;
+                }
+                if (me.bstate & BUTTON5_PRESSED) {
+                    e.mevent.type = MOUSE_SCROLL;
+                    e.mevent.delta = -1;
                 }
             }
-            if (e.kevent == 27)
-                Stop();
-            else
-                g_state(e);
+        } else if (ch != ERR) {
+            e.kevent = ch;
         }
-    #elif __linux__
-        #error "Finish this portion"
-    #else
-        #error "Operating system not supported"
-    #endif
+        if (e.kevent == 27)
+            Stop();
+        else
+            g_state(e);
+    }
 }
 
 AppFlags GetFlagsFromArgs(int argc, const char** argv) {

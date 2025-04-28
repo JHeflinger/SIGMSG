@@ -1,37 +1,54 @@
 #include "login.h"
 #include "core/app.h"
-#include "util/terminal.h"
+#include "util/macros.h"
+#include "util/colors.h"
 #include <easylogger.h>
 #include <string.h>
+#include <curses.h>
 
 void LoginState(Event event) {
-    size_t twidth = TerminalWidth();
-    size_t theight = TerminalHeight();
-    if (event.kevent == 0) {
-        Clear();
-        char front_buffer[4096] = { 0 };
-        EZ_ASSERT(twidth < 4096, "Terminal width is unusually long");
-        memset(front_buffer, '\n', theight/2 - 7);
-        printf(front_buffer);
-        memset(front_buffer, '\0', theight/2 - 7);
-        memset(front_buffer, 32, twidth/2 - 28);
-        printf("%s%s  _________.___  ________    _____    _________ ________\n", front_buffer, EZ_RED);
-        printf("%s /   _____/|   |/  _____/   /     \\  /   _____//  _____/\n", front_buffer);
-        printf("%s \\_____  \\ |   /   \\  ___  /  \\ /  \\ \\_____  \\/   \\  ___\n", front_buffer);
-        printf("%s /        \\|   \\    \\_\\  \\/    Y    \\/        \\    \\_\\  \\\n", front_buffer);
-        printf("%s/_______  /|___|\\______  /\\____|__  /_______  /\\______  /\n", front_buffer);
-        printf("%s        \\/             \\/         \\/        \\/        \\/\n%s", front_buffer, EZ_RESET);
-        printf("%s                           V0.1                         \n", front_buffer);
-        memset(front_buffer, 0, twidth/2 - 28);
-        memset(front_buffer, 32, twidth/2 - 10);
-        printf("\n%s\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xb7\n", front_buffer);
-        printf("%s\xb3    LOG-IN (l)    \xba\n", front_buffer);
-        printf("%s\xd4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc\n\n", front_buffer);
-        printf("%s\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xb7\n", front_buffer);
-        printf("%s\xb3     QUIT (q)     \xba\n", front_buffer);
-        printf("%s\xd4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc\n", front_buffer);
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    if (event.empty) {
+        clear();
+        move(height/2 - 7, width/2 - 28);
+        attron(COLOR_PAIR(RED_BLACK));
+        printw("  _________.___  ________    _____    _________ ________\n");
+        amove(0, width/2 - 28);
+        printw(" /   _____/|   |/  _____/   /     \\  /   _____//  _____/\n");
+        amove(0, width/2 - 28);
+        printw(" \\_____  \\ |   /   \\  ___  /  \\ /  \\ \\_____  \\/   \\  ___\n");
+        amove(0, width/2 - 28);
+        printw(" /        \\|   \\    \\_\\  \\/    Y    \\/        \\    \\_\\  \\\n");
+        amove(0, width/2 - 28);
+        printw("/_______  /|___|\\______  /\\____|__  /_______  /\\______  /\n");
+        amove(0, width/2 - 28);
+        printw("        \\/             \\/         \\/        \\/        \\/\n");
+        amove(0, width/2 - 28);
+        attroff(COLOR_PAIR(RED_BLACK));
+        printw("                           V0.1                         \n");
+        amove(1, width/2 - 9);
+        printw("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xb7\n");
+        amove(0, width/2 - 9);
+        printw("\xb3    LOG-IN (l)    \xba\n");
+        amove(0, width/2 - 9);
+        printw("\xd4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc\n");
+        amove(1, width/2 - 9);
+        printw("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xb7\n");
+        amove(0, width/2 - 9);
+        printw("\xb3     QUIT (q)     \xba\n");
+        amove(0, width/2 - 9);
+        printw("\xd4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc\n");
+        refresh();
     } else if (event.kevent == 'q') {
-        Clear();
+        clear();
+        refresh();
         Stop();
+    } else if (event.mevent.type == MOUSE_LEFT_CLICK || event.mevent.type == MOUSE_LEFT_DOWN) {
+        if (mcollide(event, 36, 31, 20, 3)) {
+            clear();
+            refresh();
+            Stop();
+        }
     }
 }
