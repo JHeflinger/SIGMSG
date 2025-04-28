@@ -10,6 +10,7 @@ void LoginState(Event event) {
     int height, width;
     getmaxyx(stdscr, height, width);
     if (event.resize) {
+		curs_set(0);
         clear();
         move(height/2 - 7, width/2 - 29);
         attron(COLOR_PAIR(RED_BLACK));

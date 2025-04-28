@@ -55,6 +55,7 @@ void BootAnimation() {
     Type(100, "SIGMSG");
     attroff(COLOR_PAIR(RED_BLACK));
     Wait(2000);
+	curs_set(0);
     clear();
     for (int i = 0; i < 50000; i++) {
         int r = (rand()%96) + 32;
@@ -92,4 +93,5 @@ void BootAnimation() {
     clear();
     refresh();
     Wait(1000);
+	curs_set(1);
 }
