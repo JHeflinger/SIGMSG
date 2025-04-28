@@ -3,4 +3,4 @@ call build.bat
 if %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
-"build/bin.exe"
+"build/bin.exe" %1 %2 %3 %4 %5
