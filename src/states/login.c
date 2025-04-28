@@ -21,6 +21,7 @@ void LoginState(Event event) {
         printf("%s /        \\|   \\    \\_\\  \\/    Y    \\/        \\    \\_\\  \\\n", front_buffer);
         printf("%s/_______  /|___|\\______  /\\____|__  /_______  /\\______  /\n", front_buffer);
         printf("%s        \\/             \\/         \\/        \\/        \\/\n%s", front_buffer, EZ_RESET);
+        printf("%s                           V0.1                         \n", front_buffer);
         memset(front_buffer, 0, twidth/2 - 28);
         memset(front_buffer, 32, twidth/2 - 10);
         printf("\n%s\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xb7\n", front_buffer);
