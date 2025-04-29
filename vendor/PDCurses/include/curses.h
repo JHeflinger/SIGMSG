@@ -1417,9 +1417,7 @@ PDCEX  int     wunderscore(WINDOW *);
 #define getsyx(y, x)       { if (curscr->_leaveit) (y)=(x)=-1; \
                              else getyx(curscr,(y),(x)); }
 
-#ifdef NCURSES_MOUSE_VERSION
 # define getmouse(x) nc_getmouse(x)
-#endif
 
 /* Deprecated */
 

@@ -1,5 +1,6 @@
 #include "login.h"
 #include "core/app.h"
+#include "states/chat.h"
 #include "util/macros.h"
 #include "util/colors.h"
 #include "core/platform.h"
@@ -40,18 +41,26 @@ void LoginState(Event event) {
         amove(0, width/2 - 9);
         printw("     QUIT (q)     \n");
         amove(0, width/2 - 9);
-        printw("                  \n"); 
+        printw("                  \n");
         attroff(COLOR_PAIR(BLACK_WHITE));
 		refresh();
     } else if (event.kevent == 'q') {
         clear();
         refresh();
         Stop();
+    } else if (event.kevent == 'l') {
+        clear();
+        refresh();
+        ChangeState(ChatState);
     } else if (event.mevent.type == MOUSE_LEFT_CLICK || event.mevent.type == MOUSE_LEFT_DOWN) {
 		if (mcollide(event, width/2 - 9, height/2 + 5, 18, 3)) {
             clear();
             refresh();
             Stop();
+        } else if (mcollide(event, width/2 - 9, height/2 + 1, 18, 3)) {
+            clear();
+            refresh();
+            ChangeState(ChatState);
         }
     }
 }

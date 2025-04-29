@@ -14,11 +14,11 @@ BOOL g_running = TRUE;
 void Initialize() {
     EZ_INIT_NETWORK();
     initscr();
+    keypad(stdscr, TRUE);
 	start_color();
     raw();
     cbreak();
     noecho();
-    keypad(stdscr, TRUE);
     mousemask(ALL_MOUSE_EVENTS, NULL);
     timeout(-1);
     scrollok(stdscr, TRUE);
@@ -36,16 +36,13 @@ void Listen() {
     while (g_running) {
         int ch = getch();
         Event e = { 0 };
-		if (ch == KEY_RESIZE) e.resize = TRUE;
+		if (ch == KEY_RESIZE) {
+            e.resize = TRUE;
+            resize_term(0, 0);
+        }
         if (ch == KEY_MOUSE) {
             MEVENT me;
-			#ifdef __WIN32
-            if (nc_getmouse(&me) == OK) {
-			#elif __linux__
 			if (getmouse(&me) == OK) {
-			#else
-				#error "Unsupported operating system detected!"
-			#endif
                 e.mevent.x = me.x;
                 e.mevent.y = me.y;
                 e.mevent.type = MOUSE_MOVE;
