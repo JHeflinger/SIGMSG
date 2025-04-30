@@ -32,6 +32,7 @@ void Type(float speed, const char* format, ...) {
 }
 
 void BootAnimation() {
+    scrollok(stdscr, TRUE);
     int height, width;
     getmaxyx(stdscr, height, width);
     clear();
@@ -94,4 +95,5 @@ void BootAnimation() {
     refresh();
     Wait(1000);
 	curs_set(1);
+    scrollok(stdscr, FALSE);
 }

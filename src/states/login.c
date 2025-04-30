@@ -28,7 +28,7 @@ void LoginState(Event event) {
         printw("        \\/             \\/         \\/        \\/        \\/\n");
         amove(0, width/2 - 29);
         attroff(COLOR_PAIR(RED_BLACK));
-        printw("                           V0.1                         \n");
+        printw("                          %s                        \n", SM_VERSION);
         amove(1, width/2 - 9);
         attron(COLOR_PAIR(BLACK_WHITE));
         printw("                  \n");

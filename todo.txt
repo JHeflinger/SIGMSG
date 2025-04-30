@@ -1,0 +1,7 @@
+immediate:
+    - fix errors and warnings from network
+    - do all todos
+    - do the hole punching server
+
+- safe file saving, handle closing, handle program termination, handle unknown program termination, save periodically
+- draw sending/delivered tag

@@ -3,6 +3,8 @@
 
 #include <easybool.h>
 
+#define SM_VERSION "v0.1.0"
+
 #ifdef __WIN32
 
 #define WIN32_LEAN_AND_MEAN

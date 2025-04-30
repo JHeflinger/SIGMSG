@@ -2,6 +2,7 @@
 #define APP_H
 
 #include <easybool.h>
+#include <easythreads.h>
 
 typedef enum {
     MOUSE_NONE = 0,
@@ -30,6 +31,7 @@ typedef struct {
     MouseEvent mevent;
     char kevent;
     BOOL resize;
+    BOOL recieve;
 } Event;
 
 typedef void (*AppState)(Event);
@@ -44,6 +46,10 @@ AppFlags GetFlagsFromArgs(int argc, const char** argv);
 void Stop();
 
 void ChangeState(AppState state);
+
+AppState GetState();
+
+EZ_MUTEX* Lock();
 
 void Run(AppFlags flags);
 
