@@ -1,7 +1,13 @@
 immediate:
-    - fix errors and warnings from network
     - do all todos
+    - implement uuids
     - do the hole punching server
-
-- safe file saving, handle closing, handle program termination, handle unknown program termination, save periodically
-- draw sending/delivered tag
+    - save data
+    - safe file saving
+    - file save on program termination
+    - periodic saving
+    - implement sent / delivered
+    - implement group chats
+    - implement servers
+    - implement voice chat
+    - implement video chat
