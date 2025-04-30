@@ -38,7 +38,7 @@ typedef void (*AppState)(Event);
 
 typedef enum {
     NO_APP_FLAGS = 0,
-    NO_BOOT_ANIM = 1 << 0,
+    BOOT_ANIM = 1 << 0,
 } AppFlags;
 
 AppFlags GetFlagsFromArgs(int argc, const char** argv);

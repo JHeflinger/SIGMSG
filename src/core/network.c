@@ -20,12 +20,17 @@ ARRLIST_ez_ConnectionPtr g_in_connections = { 0 };
 ez_Server* g_listener = NULL;
 ARRLIST_LinkedClient g_out_connections = { 0 };
 ARRLIST_QueuedMessage g_send_queue = { 0 };
+BOOL g_shutdown_network = FALSE;
 
 EZ_THREAD_RETURN_TYPE accept_thread(EZ_THREAD_PARAMETER_TYPE params) {
     while(1) {
-        ez_Connection* connection = EZ_SERVER_ACCEPT(g_listener);
+        ez_Connection* connection = EZ_SERVER_ACCEPT_TIMED(g_listener, 1000000);
         EZ_LOCK_MUTEX((*Lock()));
-        ARRLIST_ez_ConnectionPtr_add(&g_in_connections, connection);
+        if (g_shutdown_network) {
+            EZ_RELEASE_MUTEX((*Lock()));
+            return 0;
+        }
+        if (connection) ARRLIST_ez_ConnectionPtr_add(&g_in_connections, connection);
         EZ_RELEASE_MUTEX((*Lock()));
     }
 	return 0;
@@ -39,6 +44,10 @@ EZ_THREAD_RETURN_TYPE listen_thread(EZ_THREAD_PARAMETER_TYPE params) {
     EZ_SOCKET max_fd;
     while (1) {
         EZ_LOCK_MUTEX((*Lock()));
+        if (g_shutdown_network) {
+            EZ_RELEASE_MUTEX((*Lock()));
+            return 0;
+        }
         if (g_in_connections.size == 0) {
             EZ_RELEASE_MUTEX((*Lock()));
             Wait(100);
@@ -81,6 +90,10 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
     while (1) {
         EZ_LOCK_MUTEX((*Lock()));
         EZ_WAIT_COND(g_send_condition, (*Lock()));
+        if (g_shutdown_network) {
+            EZ_RELEASE_MUTEX((*Lock()));
+            return 0;
+        }
         for (size_t i = 0; i < g_send_queue.size; i++) {
             QueuedMessage qm = g_send_queue.data[i];
             int state = 0;
@@ -142,6 +155,7 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
 
 void InitializeNetwork() {
     EZ_INIT_NETWORK();
+    g_shutdown_network = FALSE;
 
     // TODO: remove
     {
@@ -206,8 +220,24 @@ Network* NetworkRef() {
 }
 
 void CleanNetwork() {
+    EZ_LOCK_MUTEX((*Lock()));
+    g_shutdown_network = TRUE;
+    EZ_SIGNAL_COND(g_send_condition);
+    EZ_RELEASE_MUTEX((*Lock()));
+    EZ_WAIT_THREAD(g_accept_thread);
+    EZ_WAIT_THREAD(g_listen_thread);
+    EZ_WAIT_THREAD(g_sender_thread);
     EZ_CLOSE_SERVER(g_listener);
     EZ_CLEAN_SERVER(g_listener);
+    for (size_t i = 0; i < g_in_connections.size; i++) {
+        EZ_CLOSE_CONNECTION(g_in_connections.data[i]);
+    }
+    ARRLIST_ez_ConnectionPtr_clear(&g_in_connections);
+    for (size_t i = 0; i < g_out_connections.size; i++) {
+        EZ_DISCONNECT_CLIENT(g_out_connections.data[i].client);
+    }
+    ARRLIST_LinkedClient_clear(&g_out_connections);
+    ARRLIST_QueuedMessage_clear(&g_send_queue);
     for (size_t i = 0; i < g_network.friends.size; i++) {
         ARRLIST_Message_clear(&(g_network.friends.data[i].history));
     }

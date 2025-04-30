@@ -27,7 +27,7 @@ void Initialize() {
     mousemask(ALL_MOUSE_EVENTS, NULL);
     timeout(-1);
     InitializeColors();
-    if (!(g_flags & NO_BOOT_ANIM)) BootAnimation();
+    if (g_flags & BOOT_ANIM) BootAnimation();
     ChangeState(LoginState);
 }
 
@@ -104,8 +104,8 @@ void Listen() {
 AppFlags GetFlagsFromArgs(int argc, const char** argv) {
     AppFlags flags = NO_APP_FLAGS;
     for (int i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "-no_boot_animation") == 0)
-            flags |= NO_BOOT_ANIM;
+        if (strcmp(argv[i], "-boot_anim") == 0)
+            flags |= BOOT_ANIM;
     }
     return flags;
 }
