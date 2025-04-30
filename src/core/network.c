@@ -79,6 +79,7 @@ EZ_THREAD_RETURN_TYPE listen_thread(EZ_THREAD_PARAMETER_TYPE params) {
 
 EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
     while (1) {
+        EZ_LOCK_MUTEX((*Lock()));
         EZ_WAIT_COND(g_send_condition, (*Lock()));
         for (size_t i = 0; i < g_send_queue.size; i++) {
             QueuedMessage qm = g_send_queue.data[i];
@@ -92,7 +93,7 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
                             if (g_out_connections.data[j].user == qm.user) {
                                 lc = g_out_connections.data[j];
                                 state = 1;
-                                continue;
+                                break;
                             }
                         }
                         state = 2;
@@ -120,7 +121,7 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
                             lc.client = client;
                             ARRLIST_LinkedClient_add(&g_out_connections, lc);
                             state = 1;
-                            continue;
+                            break;
                         }
                         state = 3;
                         break;
@@ -134,6 +135,7 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
             }
         }
         ARRLIST_QueuedMessage_clear(&g_send_queue);
+        EZ_RELEASE_MUTEX((*Lock()));
     }
 	return 0;
 }
