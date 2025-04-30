@@ -140,7 +140,7 @@ void ChatState(Event event) {
     } else if (event.kevent == 8 && g_chat_cursor > 0) {
         g_chat_cursor--;
         g_chat_buffer[g_chat_cursor] = '\0';
-    } else if (event.kevent == 13 && g_chat_cursor > 0) {
+    } else if ((event.kevent == 13 || event.kevent == 10) && g_chat_cursor > 0) {
         SendChat(&(g_nref->friends.data[g_selected_friend]), g_chat_buffer);
         draw_chat();
         g_chat_cursor = 0;

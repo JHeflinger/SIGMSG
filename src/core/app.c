@@ -88,6 +88,7 @@ void Listen() {
                 }
             }
         } else if (ch != ERR) {
+			if (ch == 263) ch = 8;
             e.kevent = ch;
         }
         if (e.kevent == 27) {
@@ -117,9 +118,7 @@ void ChangeState(AppState state) {
     g_state = state;
     Event e = { 0 };
     e.resize = TRUE;
-    EZ_LOCK_MUTEX(g_lock);
     state(e);
-    EZ_RELEASE_MUTEX(g_lock);
 }
 
 AppState GetState() {

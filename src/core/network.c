@@ -80,7 +80,6 @@ EZ_THREAD_RETURN_TYPE listen_thread(EZ_THREAD_PARAMETER_TYPE params) {
 EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
     while (1) {
         EZ_WAIT_COND(g_send_condition, (*Lock()));
-        EZ_LOCK_MUTEX((*Lock()));
         for (size_t i = 0; i < g_send_queue.size; i++) {
             QueuedMessage qm = g_send_queue.data[i];
             int state = 0;
@@ -135,7 +134,6 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
             }
         }
         ARRLIST_QueuedMessage_clear(&g_send_queue);
-        EZ_RELEASE_MUTEX((*Lock()));
     }
 	return 0;
 }
@@ -228,8 +226,6 @@ void SendChat(User* user, const char* chat) {
     msg.time.minute = tm_info->tm_min;
     msg.time.second = tm_info->tm_sec;
     ARRLIST_Message_add(&(user->history), msg);
-    EZ_LOCK_MUTEX((*Lock()));
     ARRLIST_QueuedMessage_add(&g_send_queue, (QueuedMessage){ user, &(user->history.data[user->history.size - 1]) });
-    EZ_RELEASE_MUTEX((*Lock()));
     EZ_SIGNAL_COND(g_send_condition);
 }
