@@ -157,55 +157,9 @@ void InitializeNetwork() {
     EZ_INIT_NETWORK();
     g_shutdown_network = FALSE;
 
-    // TODO: remove
-    {
-        User u1 = { 0 };
-        strcpy(u1.name, "Cameron Lee");
-        User u2 = { 0 };
-        u2.unread = TRUE;
-        strcpy(u2.name, "Localhost");
-        User u3 = { 0 };
-        strcpy(u3.name, "PoopFart");
-        Message m = (Message){
-            1,
-            (Timestamp){ 25, 4, 12, 12, 45, 1, 0 },
-            strlen("Steely Dan Loves Potatoes"),
-            "Steely Dan Loves Potatoes\0"};
-        ARRLIST_Message_add(&(u1.history), m);
-        m = (Message){
-            0,
-            (Timestamp){ 25, 4, 12, 12, 47, 13, 0 },
-            strlen("No he fucking doesn't?? You big weirdo??? Why would you even say that it is such an extremely outlandish opinion its just ridiculous realy."),
-            "No he fucking doesn't?? You big weirdo??? Why would you even say that it is such an extremely outlandish opinion its just ridiculous realy.\0"};
-        ARRLIST_Message_add(&(u1.history), m);
-        m = (Message){
-            0,
-            (Timestamp){ 25, 4, 12, 12, 30, 12, 0 },
-            strlen("I HATE YOU!!!"),
-            "I HATE YOU!!!"};
-        ARRLIST_Message_add(&(u2.history), m);
-        m = (Message){
-            1,
-            (Timestamp){ 25, 4, 12, 12, 32, 15, 0 },
-            strlen("What the hell brah where did this come from"),
-            "What the hell brah where did this come from"};
-        ARRLIST_Message_add(&(u2.history), m);
-        m = (Message){
-            1,
-            (Timestamp){ 25, 4, 12, 3, 52, 1, 0 },
-            strlen("hello hello hello hello"),
-            "hello hello hello hello"};
-        ARRLIST_Message_add(&(u3.history), m);
-        m = (Message){
-            1,
-            (Timestamp){ 25, 4, 12, 4, 52, 1, 0 },
-            strlen("Wake the fuck up dude"),
-            "Wake the fuck up dude"};
-        ARRLIST_Message_add(&(u3.history), m);
-        ARRLIST_User_add(&(g_network.friends), u1);
-        ARRLIST_User_add(&(g_network.friends), u2);
-        ARRLIST_User_add(&(g_network.friends), u3);
-    }
+    User localhost = { 0 };
+    strcpy(localhost.name, "Me");
+    ARRLIST_User_add(&(g_network.friends), localhost);
 
     EZ_CREATE_COND(g_send_condition)
     g_listener = EZ_GENERATE_SERVER();

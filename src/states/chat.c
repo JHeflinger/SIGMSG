@@ -38,7 +38,7 @@ void draw_headers() {
     }
     mvprintw(0, 1, "SIGMSG %s", SM_VERSION);
     mvprintw(0, g_width - 15, "3 new messages"); // TODO:
-    mvprintw(0, g_width/2 - 3, "Online"); // TODO:
+    mvprintw(0, g_width/2 - 10, "ID#1234567890abcdef"); // TODO:
     mvprintw(g_height - 5, 1, "%s", g_nref->friends.data[g_selected_friend].name); 
     attroff(COLOR_PAIR(BLACK_WHITE));
     attron(COLOR_PAIR(GRAY_WHITE));
