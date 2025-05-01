@@ -1,12 +1,11 @@
 immediate:
-    - do all todos
-    - implement uuids
     - do the hole punching server
     - save data
     - safe file saving
     - file save on program termination
     - periodic saving
     - implement sent / delivered
+    - unread messages
     - implement group chats
     - implement servers
     - implement voice chat

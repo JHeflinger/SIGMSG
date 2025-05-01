@@ -1,6 +1,7 @@
 #include "network.h"
 #include "core/app.h"
 #include "util/animations.h"
+#include "util/macros.h"
 #include <easynet.h>
 #include <time.h>
 #include <easythreads.h>
@@ -67,10 +68,14 @@ EZ_THREAD_RETURN_TYPE listen_thread(EZ_THREAD_PARAMETER_TYPE params) {
             ez_Buffer* ebuffer = EZ_GENERATE_BUFFER(sizeof(Message));
             for (size_t i = 0; i < g_in_connections.size; i++) {
                 if (EZ_SERVER_ASK(g_in_connections.data[i], ebuffer)) {
-                    // TODO: add to proper history
                     Message msg = { 0 };
                     EZ_TRANSLATE_BUFFER(ebuffer, &msg);
-                    ARRLIST_Message_add(&(g_network.friends.data[0].history), msg);
+                    for (size_t j = 0; j < g_network.friends.size; j++) {
+                        if (uuideq(g_network.friends.data[j].id, msg.from)) {
+                            ARRLIST_Message_add(&(g_network.friends.data[j].history), msg);
+                            break;
+                        }
+                    }
                     AppState curr_state = GetState();
                     Event e = { 0 };
                     e.recieve = TRUE;
@@ -153,6 +158,18 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
 	return 0;
 }
 
+UUID GenerateUUID() {
+    srand(time(NULL));
+    UUID id = { 0 };
+    for (int i = 0; i < 4; i++) {
+        id.first = (id.first << 16) | (rand() & 0xFFFF);
+    }
+    for (int i = 0; i < 4; i++) {
+        id.second = (id.second << 16) | (rand() & 0xFFFF);
+    }
+    return id;
+}
+
 void InitializeNetwork() {
     EZ_INIT_NETWORK();
     g_shutdown_network = FALSE;
@@ -201,6 +218,7 @@ void CleanNetwork() {
 
 void SendChat(User* user, const char* chat) {
     Message msg = { 0 };
+    msg.type = MESSAGE_PACKET;
     msg.size = strlen(chat);
     strncpy(msg.text, chat, MAX_MESSAGE_SIZE);
     time_t etime = time(NULL);
@@ -211,6 +229,8 @@ void SendChat(User* user, const char* chat) {
     msg.time.hour = tm_info->tm_hour;
     msg.time.minute = tm_info->tm_min;
     msg.time.second = tm_info->tm_sec;
+    msg.from = g_network.id;
+    msg.to = user->id;
     ARRLIST_Message_add(&(user->history), msg);
     ARRLIST_QueuedMessage_add(&g_send_queue, (QueuedMessage){ user, &(user->history.data[user->history.size - 1]) });
     EZ_SIGNAL_COND(g_send_condition);

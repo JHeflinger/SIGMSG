@@ -1,6 +1,8 @@
 #include "chat.h"
 #include "core/platform.h"
 #include "util/colors.h"
+#include "util/macros.h"
+#include <inttypes.h>
 
 Network* g_nref = NULL;
 size_t g_selected_friend = 0;
@@ -37,12 +39,15 @@ void draw_headers() {
         mvaddch(g_height - 5, i, ' ');
     }
     mvprintw(0, 1, "SIGMSG %s", SM_VERSION);
-    mvprintw(0, g_width - 15, "3 new messages"); // TODO:
-    mvprintw(0, g_width/2 - 10, "ID#1234567890abcdef"); // TODO:
+    mvprintw(0, g_width - 16, "No new messages");
+    mvprintw(0, g_width/2 - 18, "ID#%" PRIx64 "%" PRIx64, g_nref->id.first, g_nref->id.second);
     mvprintw(g_height - 5, 1, "%s", g_nref->friends.data[g_selected_friend].name); 
     attroff(COLOR_PAIR(BLACK_WHITE));
     attron(COLOR_PAIR(GRAY_WHITE));
-    mvprintw(g_height - 5, 2 + strlen(g_nref->friends.data[g_selected_friend].name), "#7ab882bd728a10"); //TODO:
+    mvprintw(g_height - 5, 1 + strlen(g_nref->friends.data[g_selected_friend].name),
+        "#%" PRIx64 "%" PRIx64,
+        g_nref->friends.data[g_selected_friend].id.first,
+        g_nref->friends.data[g_selected_friend].id.second);
     attroff(COLOR_PAIR(GRAY_WHITE));
 }
 
@@ -70,10 +75,10 @@ void draw_chat() {
         cursor -= lines + 2;
         if (cursor < 1) break;
         attron(A_BOLD);
-        mvprintw(cursor, MAX_USERNAME_SIZE + 7, "%s", (msg->user ? user->name : "Me"));
+        mvprintw(cursor, MAX_USERNAME_SIZE + 7, "%s", (uuideq(msg->to, g_nref->id) ? user->name : "Me"));
         attroff(A_BOLD);
         attron(COLOR_PAIR(GRAY_BLACK));
-        mvprintw(cursor, MAX_USERNAME_SIZE + 8 + (msg->user ? strlen(user->name) : 2), "(%d-%d-%d %d:%d:%d)",
+        mvprintw(cursor, MAX_USERNAME_SIZE + 8 + (uuideq(msg->to, g_nref->id) ? strlen(user->name) : 2), "(%d-%d-%d %d:%d:%d)",
             (int)msg->time.month,
             (int)msg->time.day,
             (int)msg->time.year,
@@ -91,10 +96,6 @@ void draw_chat() {
         }
         cursor -= lines + 1;
     }
-        // attron(A_BOLD);
-        // mvprintw(2, 22, "Cameron (4-12-25 12:25:13)");
-        // attroff(A_BOLD);
-        // mvprintw(3, 22, "Bro... come over.... :eggplant: :wet:");
 }
 
 void ChatState(Event event) {

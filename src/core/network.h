@@ -9,6 +9,15 @@
 #define MAX_USERNAME_SIZE 18
 #define SIGMSG_PORT 9876
 
+typedef enum {
+    MESSAGE_PACKET = 0,
+} Header;
+
+typedef struct {
+    uint64_t first;
+    uint64_t second;
+} UUID;
+
 typedef struct {
     uint8_t year;
     uint8_t month;
@@ -20,7 +29,9 @@ typedef struct {
 } Timestamp;
 
 typedef struct {
-    uint8_t user; // replace with uuid later so central server can know where coming from and handle accordingly
+    Header type;
+    UUID from;
+    UUID to;
     Timestamp time;
     uint16_t size;
     char text[MAX_MESSAGE_SIZE]; // IMPORTANT: this should be last
@@ -29,6 +40,7 @@ typedef struct {
 DECLARE_ARRLIST(Message);
 
 typedef struct {
+    UUID id;
     BOOL unread;
     ARRLIST_Message history;
     char name[MAX_USERNAME_SIZE];
@@ -53,8 +65,11 @@ typedef struct {
 DECLARE_ARRLIST(QueuedMessage);
 
 typedef struct {
+    UUID id;
     ARRLIST_User friends;
 } Network;
+
+UUID GenerateUUID();
 
 void InitializeNetwork();
 

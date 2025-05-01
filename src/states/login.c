@@ -4,6 +4,7 @@
 #include "util/macros.h"
 #include "util/colors.h"
 #include "core/platform.h"
+#include "core/network.h"
 #include <easylogger.h>
 #include <string.h>
 
@@ -51,6 +52,8 @@ void LoginState(Event event) {
     } else if (event.kevent == 'l') {
         clear();
         refresh();
+        NetworkRef()->id = GenerateUUID();
+        NetworkRef()->friends.data[0].id = NetworkRef()->id;
         ChangeState(ChatState);
     } else if (event.mevent.type == MOUSE_LEFT_CLICK || event.mevent.type == MOUSE_LEFT_DOWN) {
 		if (mcollide(event, width/2 - 9, height/2 + 5, 18, 3)) {
