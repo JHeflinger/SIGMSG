@@ -40,7 +40,15 @@ void draw_headers() {
     }
     mvprintw(0, 1, "SIGMSG %s", SM_VERSION);
     mvprintw(0, g_width - 16, "No new messages");
-    mvprintw(0, g_width/2 - 18, "ID#%" PRIx64 "%" PRIx64, g_nref->id.first, g_nref->id.second);
+    if (g_nref->online) {
+        mvprintw(0, g_width/2 - 18, "ID#%" PRIx64 "%" PRIx64, g_nref->id.first, g_nref->id.second);
+    } else {
+        attroff(COLOR_PAIR(BLACK_WHITE));
+        attron(COLOR_PAIR(RED_WHITE));
+        mvprintw(0, g_width/2 - 4, "OFFLINE");
+        attroff(COLOR_PAIR(RED_WHITE));
+        attron(COLOR_PAIR(BLACK_WHITE));
+    }
     mvprintw(g_height - 5, 1, "%s", g_nref->friends.data[g_selected_friend].name); 
     attroff(COLOR_PAIR(BLACK_WHITE));
     attron(COLOR_PAIR(GRAY_WHITE));
@@ -124,6 +132,7 @@ void ChatState(Event event) {
         draw_options();
     }
     if (event.recieve) {
+        draw_headers();
         draw_chat();
     }
     if (event.kevent >= 32 && event.kevent <= 126) {

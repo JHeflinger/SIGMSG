@@ -1,5 +1,4 @@
 immediate:
-    - adapt to use udp
     - do the hole punching server
     - send only as much as needed from a message
     - ensure no duplicate messages using mid
@@ -11,8 +10,10 @@ immediate:
     - offline messages
     - implement sent / delivered
     - unread messages
+    - lock chat sending while offline
     - efficient data loading
     - implement group chats
     - implement servers
+    - worry about endianess / encoding
     - implement voice chat
     - implement video chat

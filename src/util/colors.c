@@ -9,4 +9,5 @@ void InitializeColors() {
     init_pair(5, 244, COLOR_BLACK);
     init_pair(6, 244, COLOR_WHITE);
     init_pair(7, COLOR_WHITE, COLOR_RED);
+    init_pair(8, COLOR_RED, COLOR_WHITE);
 }

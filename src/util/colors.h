@@ -9,6 +9,7 @@ typedef enum {
     GRAY_BLACK = 5,
     GRAY_WHITE = 6,
     WHITE_RED = 7,
+    RED_WHITE = 8,
 } ColorPair;
 
 void InitializeColors();

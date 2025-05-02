@@ -33,6 +33,38 @@ EZ_THREAD_RETURN_TYPE listen_thread(EZ_THREAD_PARAMETER_TYPE params) {
             return 0;
         }
         EZ_RELEASE_MUTEX((*Lock()));
+        if (g_network.id.first == 0 && g_network.id.second == 0) {
+            Wait(100);
+            continue;
+        }
+        RegisterPacket reg = { 0 };
+        reg.type = REGISTER_PACKET;
+        reg.peer = g_network.id;
+        EZ_RECORD_BUFFER(ebuffer, &reg);
+        Destination punch_dest;
+        punch_dest.port = SIGMSG_PORT;
+        punch_dest.address = CENTRAL_PEER_IP;
+        EZ_SERVER_THROW(g_listener, punch_dest, ebuffer);
+        Destination back = EZ_SERVER_RECIEVE_FROM_TIMED(g_listener, ebuffer, 100000);
+        if (back.port != 0) {
+            EZ_LOCK_MUTEX((*Lock()));
+            g_network.online = TRUE;
+            AppState curr_state = GetState();
+            Event e = { 0 };
+            e.recieve = TRUE;
+            curr_state(e);
+            EZ_RELEASE_MUTEX((*Lock()));
+            break;
+        }
+    }
+    while (1) {
+        EZ_LOCK_MUTEX((*Lock()));
+        if (g_shutdown_network) {
+            EZ_CLEAN_BUFFER(ebuffer);
+            EZ_RELEASE_MUTEX((*Lock()));
+            return 0;
+        }
+        EZ_RELEASE_MUTEX((*Lock()));
         Destination destination = EZ_SERVER_RECIEVE_FROM_TIMED(g_listener, ebuffer, 100000);
         if (destination.port != 0) {
             EZ_LOCK_MUTEX((*Lock()));
@@ -70,6 +102,11 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
             QueuedMessage qm = g_send_queue.data[i];
             int state = 0;
             LinkedClient lc = { 0 };
+            ConnectPacket cnp;
+            cnp.type = CONNECT_PACKET;
+            Destination punch_dest;
+            punch_dest.port = SIGMSG_PORT;
+            punch_dest.address = CENTRAL_PEER_IP;
             while (1) {
                 BOOL breakout = FALSE;
                 switch (state) {
@@ -114,14 +151,33 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
                         EZ_CLEAN_BUFFER(ackbuffer);
                         break;
                     case 2: // attempt connection state
-                        lc.destination = (Destination){{{127, 0, 0, 1}}, SIGMSG_PORT};
-                        lc.user = qm.user;
-                        ARRLIST_LinkedClient_add(&g_out_connections, lc);
-                        state = 1;
-                        //state = 3;
+                        EZ_RELEASE_MUTEX((*Lock()));
+                        ez_Buffer* cnbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
+                        ez_Buffer* pbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
+                        cnp.to = qm.message->to;
+                        EZ_RECORD_BUFFER(cnbuffer, &cnp);
+                        state = 3;
+                        for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
+                            EZ_SERVER_THROW(g_thrower, punch_dest, cnbuffer);
+                            Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_thrower, pbuffer, 100000);
+                            if (dest.port != 0 && pbuffer->current_length == sizeof(PeerPacket)) {
+                                PeerPacket packet;
+                                memcpy(&packet, pbuffer->bytes, pbuffer->current_length);
+                                if (packet.type == PEER_PACKET && packet.destination.port != 0) {
+                                    lc.destination = packet.destination;
+                                    lc.user = qm.user;
+                                    ARRLIST_LinkedClient_add(&g_out_connections, lc);
+                                    state = 1;
+                                    break;
+                                }
+                            }
+                        }
+                        EZ_CLEAN_BUFFER(cnbuffer);
+                        EZ_CLEAN_BUFFER(pbuffer);
+                        EZ_LOCK_MUTEX((*Lock()));
                         break;
                     case 3: // send to central
-                        // TODO:
+                        EZ_WARN("FAILURE FAILURE NOT IMPLEMENTED STORE MESSAGES YET");
                         breakout = TRUE;
                         break;
                     default: break;

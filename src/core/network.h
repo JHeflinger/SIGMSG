@@ -30,6 +30,21 @@ typedef struct {
 } AckPacket;
 
 typedef struct {
+    Header type;
+    UUID peer;
+} RegisterPacket;
+
+typedef struct {
+	Header type;
+	UUID to;
+} ConnectPacket;
+
+typedef struct {
+	Header type;
+	Destination destination;
+} PeerPacket;
+
+typedef struct {
     uint8_t year;
     uint8_t month;
     uint8_t day;
@@ -77,6 +92,7 @@ DECLARE_ARRLIST(QueuedMessage);
 typedef struct {
     UUID id;
     ARRLIST_User friends;
+    BOOL online;
 } Network;
 
 UUID GenerateUUID();
