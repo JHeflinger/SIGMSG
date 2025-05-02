@@ -1,11 +1,17 @@
 immediate:
+    - adapt to use udp
     - do the hole punching server
+    - send only as much as needed from a message
+    - ensure no duplicate messages using mid
+    - ensure date order of messages
     - save data
     - safe file saving
     - file save on program termination
     - periodic saving
+    - offline messages
     - implement sent / delivered
     - unread messages
+    - efficient data loading
     - implement group chats
     - implement servers
     - implement voice chat

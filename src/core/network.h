@@ -8,15 +8,26 @@
 #define MAX_MESSAGE_SIZE 2048
 #define MAX_USERNAME_SIZE 18
 #define SIGMSG_PORT 9876
+#define MAX_SEND_ATTEMPTS 3
 
 typedef enum {
     MESSAGE_PACKET = 0,
+    REGISTER_PACKET = 1,
+    CONNECT_PACKET = 2,
+    ACK_PACKET = 3,
+    PEER_PACKET = 4,
+    FAILURE_PACKET = 5,
 } Header;
 
 typedef struct {
     uint64_t first;
     uint64_t second;
 } UUID;
+
+typedef struct {
+    Header type;
+    UUID id;
+} AckPacket;
 
 typedef struct {
     uint8_t year;
@@ -32,6 +43,7 @@ typedef struct {
     Header type;
     UUID from;
     UUID to;
+    UUID id;
     Timestamp time;
     uint16_t size;
     char text[MAX_MESSAGE_SIZE]; // IMPORTANT: this should be last
@@ -48,10 +60,8 @@ typedef struct {
 
 DECLARE_ARRLIST(User);
 
-DECLARE_ARRLIST_NAMED(ez_ConnectionPtr, ez_Connection*);
-
 typedef struct {
-    ez_Client* client;
+    Destination destination;
     User* user;
 } LinkedClient;
 

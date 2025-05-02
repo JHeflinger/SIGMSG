@@ -8,86 +8,53 @@
 
 IMPL_ARRLIST(Message);
 IMPL_ARRLIST(User);
-IMPL_ARRLIST_NAMED(ez_ConnectionPtr, ez_Connection*);
 IMPL_ARRLIST(LinkedClient);
 IMPL_ARRLIST(QueuedMessage);
 
+Ipv4 CENTRAL_PEER_IP = {{170, 9, 247, 131}};
 Network g_network = { 0 };
 EZ_COND g_send_condition;
 EZ_THREAD g_accept_thread;
 EZ_THREAD g_listen_thread;
 EZ_THREAD g_sender_thread;
-ARRLIST_ez_ConnectionPtr g_in_connections = { 0 };
 ez_Server* g_listener = NULL;
+ez_Server* g_thrower = NULL;
 ARRLIST_LinkedClient g_out_connections = { 0 };
 ARRLIST_QueuedMessage g_send_queue = { 0 };
 BOOL g_shutdown_network = FALSE;
 
-EZ_THREAD_RETURN_TYPE accept_thread(EZ_THREAD_PARAMETER_TYPE params) {
-    while(1) {
-        ez_Connection* connection = EZ_SERVER_ACCEPT_TIMED(g_listener, 1000000);
-        EZ_LOCK_MUTEX((*Lock()));
-        if (g_shutdown_network) {
-            EZ_RELEASE_MUTEX((*Lock()));
-            return 0;
-        }
-        if (connection) ARRLIST_ez_ConnectionPtr_add(&g_in_connections, connection);
-        EZ_RELEASE_MUTEX((*Lock()));
-    }
-	return 0;
-}
-
 EZ_THREAD_RETURN_TYPE listen_thread(EZ_THREAD_PARAMETER_TYPE params) {
-    struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 100000; // 100 ms
-    fd_set read_fds;
-    EZ_SOCKET max_fd;
+    ez_Buffer* ebuffer = EZ_GENERATE_BUFFER(sizeof(Message));
     while (1) {
         EZ_LOCK_MUTEX((*Lock()));
         if (g_shutdown_network) {
+            EZ_CLEAN_BUFFER(ebuffer);
             EZ_RELEASE_MUTEX((*Lock()));
             return 0;
         }
-        if (g_in_connections.size == 0) {
-            EZ_RELEASE_MUTEX((*Lock()));
-            Wait(100);
-            continue;
-        }
-        max_fd = g_in_connections.data[0]->socket;
-        FD_ZERO(&read_fds);
-        for (size_t i = 0; i < g_in_connections.size; i++) {
-            if (g_in_connections.data[i]->socket > max_fd) {
-                max_fd = g_in_connections.data[i]->socket;
-            }
-            FD_SET(g_in_connections.data[i]->socket, &read_fds);
-        }
         EZ_RELEASE_MUTEX((*Lock()));
-        if (select(max_fd + 1, &read_fds, NULL, NULL, &timeout) > 0) {
+        Destination destination = EZ_SERVER_RECIEVE_FROM_TIMED(g_listener, ebuffer, 100000);
+        if (destination.port != 0) {
             EZ_LOCK_MUTEX((*Lock()));
-            ez_Buffer* ebuffer = EZ_GENERATE_BUFFER(sizeof(Message));
-            for (size_t i = 0; i < g_in_connections.size; i++) {
-                if (EZ_SERVER_ASK(g_in_connections.data[i], ebuffer)) {
-                    Message msg = { 0 };
-                    EZ_TRANSLATE_BUFFER(ebuffer, &msg);
-                    for (size_t j = 0; j < g_network.friends.size; j++) {
-                        if (uuideq(g_network.friends.data[j].id, msg.from)) {
-                            ARRLIST_Message_add(&(g_network.friends.data[j].history), msg);
-                            break;
-                        }
-                    }
-                    AppState curr_state = GetState();
-                    Event e = { 0 };
-                    e.recieve = TRUE;
-                    curr_state(e);
+            Message msg = { 0 };
+            EZ_TRANSLATE_BUFFER(ebuffer, &msg);
+            AckPacket ack = { ACK_PACKET, {msg.id.first, msg.id.second}};
+            EZ_RECORD_BUFFER(ebuffer, &ack);
+            EZ_SERVER_THROW(g_listener, destination, ebuffer);
+            for (size_t j = 0; j < g_network.friends.size; j++) {
+                if (uuideq(g_network.friends.data[j].id, msg.from)) {
+                    ARRLIST_Message_add(&(g_network.friends.data[j].history), msg);
+                    break;
                 }
             }
-            EZ_CLEAN_BUFFER(ebuffer);
+            AppState curr_state = GetState();
+            Event e = { 0 };
+            e.recieve = TRUE;
+            curr_state(e);
             EZ_RELEASE_MUTEX((*Lock()));
         }
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 100000;
     }
+    EZ_CLEAN_BUFFER(ebuffer);
 	return 0;
 }
 
@@ -117,13 +84,26 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
                         state = 2;
                         break;
                     case 1: // send over connection state
-                        ez_Buffer* ebuffer = EZ_GENERATE_BUFFER(sizeof(Message)); //TODO: make this send only as much as needed from message
+                        ez_Buffer* ebuffer = EZ_GENERATE_BUFFER(sizeof(Message));
+                        ez_Buffer* ackbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
                         EZ_RECORD_BUFFER(ebuffer, qm.message);
-                        if (EZ_CLIENT_SEND(lc.client, ebuffer)) {
-                            breakout = TRUE;
-                        } else {
+                        EZ_RELEASE_MUTEX((*Lock()));
+                        for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
+                            EZ_SERVER_THROW(g_thrower, lc.destination, ebuffer);
+                            Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_thrower, ackbuffer, 100000);
+                            if (dest.port != 0 && ackbuffer->current_length == sizeof(AckPacket)) {
+                                AckPacket packet;
+                                memcpy(&packet, ackbuffer->bytes, ackbuffer->current_length);
+                                if (packet.type == ACK_PACKET && uuideq(packet.id, qm.message->id)) {
+                                    breakout = TRUE;
+                                    break;
+                                }
+                            }
+                        }
+                        EZ_LOCK_MUTEX((*Lock()));
+                        if (!breakout) {
                             for (size_t j = 0; j < g_out_connections.size; j++) {
-                                if (lc.client == g_out_connections.data[j].client) {
+                                if (lc.user == g_out_connections.data[j].user) {
                                     ARRLIST_LinkedClient_remove(&g_out_connections, j);
                                     break;
                                 }
@@ -131,17 +111,14 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
                             state = 2;
                         }
                         EZ_CLEAN_BUFFER(ebuffer);
+                        EZ_CLEAN_BUFFER(ackbuffer);
                         break;
                     case 2: // attempt connection state
-                        ez_Client* client = EZ_GENERATE_CLIENT();
-                        if (EZ_CONNECT_CLIENT(client, ((Ipv4){{127, 0, 0, 1}}), SIGMSG_PORT)) {
-                            lc.user = qm.user;
-                            lc.client = client;
-                            ARRLIST_LinkedClient_add(&g_out_connections, lc);
-                            state = 1;
-                            break;
-                        }
-                        state = 3;
+                        lc.destination = (Destination){{{127, 0, 0, 1}}, SIGMSG_PORT};
+                        lc.user = qm.user;
+                        ARRLIST_LinkedClient_add(&g_out_connections, lc);
+                        state = 1;
+                        //state = 3;
                         break;
                     case 3: // send to central
                         // TODO:
@@ -180,8 +157,11 @@ void InitializeNetwork() {
 
     EZ_CREATE_COND(g_send_condition)
     g_listener = EZ_GENERATE_SERVER();
+    g_thrower = EZ_GENERATE_SERVER();
+    g_listener->udp = TRUE;
+    g_thrower->udp = TRUE;
     EZ_OPEN_SERVER(g_listener, SIGMSG_PORT);
-    EZ_CREATE_THREAD(g_accept_thread, accept_thread, NULL);
+    EZ_OPEN_SERVER(g_thrower, SIGMSG_PORT + 1);
     EZ_CREATE_THREAD(g_listen_thread, listen_thread, NULL);
     EZ_CREATE_THREAD(g_sender_thread, sender_thread, NULL);
 }
@@ -200,13 +180,8 @@ void CleanNetwork() {
     EZ_WAIT_THREAD(g_sender_thread);
     EZ_CLOSE_SERVER(g_listener);
     EZ_CLEAN_SERVER(g_listener);
-    for (size_t i = 0; i < g_in_connections.size; i++) {
-        EZ_CLOSE_CONNECTION(g_in_connections.data[i]);
-    }
-    ARRLIST_ez_ConnectionPtr_clear(&g_in_connections);
-    for (size_t i = 0; i < g_out_connections.size; i++) {
-        EZ_DISCONNECT_CLIENT(g_out_connections.data[i].client);
-    }
+    EZ_CLOSE_SERVER(g_thrower);
+    EZ_CLEAN_SERVER(g_thrower);
     ARRLIST_LinkedClient_clear(&g_out_connections);
     ARRLIST_QueuedMessage_clear(&g_send_queue);
     for (size_t i = 0; i < g_network.friends.size; i++) {
