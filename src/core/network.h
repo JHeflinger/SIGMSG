@@ -17,12 +17,23 @@ typedef enum {
     ACK_PACKET = 3,
     PEER_PACKET = 4,
     FAILURE_PACKET = 5,
+	PUNCH_PACKET = 6,
+	FIST_PACKET = 7,
 } Header;
 
 typedef struct {
     uint64_t first;
     uint64_t second;
 } UUID;
+
+typedef struct {
+	Header type;
+} FistPacket;
+
+typedef struct {
+	Header type;
+	Destination destination;
+} PunchPacket;
 
 typedef struct {
     Header type;

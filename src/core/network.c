@@ -14,7 +14,6 @@ IMPL_ARRLIST(QueuedMessage);
 Ipv4 CENTRAL_PEER_IP = {{170, 9, 247, 131}};
 Network g_network = { 0 };
 EZ_COND g_send_condition;
-EZ_THREAD g_accept_thread;
 EZ_THREAD g_listen_thread;
 EZ_THREAD g_sender_thread;
 ez_Server* g_listener = NULL;
@@ -46,15 +45,19 @@ EZ_THREAD_RETURN_TYPE listen_thread(EZ_THREAD_PARAMETER_TYPE params) {
         punch_dest.address = CENTRAL_PEER_IP;
         EZ_SERVER_THROW(g_listener, punch_dest, ebuffer);
         Destination back = EZ_SERVER_RECIEVE_FROM_TIMED(g_listener, ebuffer, 100000);
-        if (back.port != 0) {
-            EZ_LOCK_MUTEX((*Lock()));
-            g_network.online = TRUE;
-            AppState curr_state = GetState();
-            Event e = { 0 };
-            e.recieve = TRUE;
-            curr_state(e);
-            EZ_RELEASE_MUTEX((*Lock()));
-            break;
+        if (back.port != 0 && ebuffer->current_length == sizeof(AckPacket)) {
+			AckPacket ack;
+			memcpy(&ack, ebuffer->bytes, sizeof(AckPacket));
+			if (ack.type == ACK_PACKET) {
+				EZ_LOCK_MUTEX((*Lock()));
+				g_network.online = TRUE;
+				AppState curr_state = GetState();
+				Event e = { 0 };
+				e.recieve = TRUE;
+				curr_state(e);
+				EZ_RELEASE_MUTEX((*Lock()));
+				break;
+			}
         }
     }
     while (1) {
@@ -66,23 +69,27 @@ EZ_THREAD_RETURN_TYPE listen_thread(EZ_THREAD_PARAMETER_TYPE params) {
         }
         EZ_RELEASE_MUTEX((*Lock()));
         Destination destination = EZ_SERVER_RECIEVE_FROM_TIMED(g_listener, ebuffer, 100000);
-        if (destination.port != 0) {
+        if (destination.port != 0 && ebuffer->current_length >= sizeof(Header)) {
             EZ_LOCK_MUTEX((*Lock()));
-            Message msg = { 0 };
-            EZ_TRANSLATE_BUFFER(ebuffer, &msg);
-            AckPacket ack = { ACK_PACKET, {msg.id.first, msg.id.second}};
-            EZ_RECORD_BUFFER(ebuffer, &ack);
-            EZ_SERVER_THROW(g_listener, destination, ebuffer);
-            for (size_t j = 0; j < g_network.friends.size; j++) {
-                if (uuideq(g_network.friends.data[j].id, msg.from)) {
-                    ARRLIST_Message_add(&(g_network.friends.data[j].history), msg);
-                    break;
-                }
-            }
-            AppState curr_state = GetState();
-            Event e = { 0 };
-            e.recieve = TRUE;
-            curr_state(e);
+			Header header;
+			memcpy(&header, ebuffer->bytes, sizeof(Header));
+			if (header == MESSAGE_PACKET) {
+				Message msg = { 0 };
+				EZ_TRANSLATE_BUFFER(ebuffer, &msg);
+				AckPacket ack = { ACK_PACKET, {msg.id.first, msg.id.second}};
+				EZ_RECORD_BUFFER(ebuffer, &ack);
+				EZ_SERVER_THROW(g_listener, destination, ebuffer);
+			    for (size_t j = 0; j < g_network.friends.size; j++) {
+		            if (uuideq(g_network.friends.data[j].id, msg.from)) {
+	                    ARRLIST_Message_add(&(g_network.friends.data[j].history), msg);
+					    break;
+				    }
+			    }
+		        AppState curr_state = GetState();
+	            Event e = { 0 };
+			    e.recieve = TRUE;
+				curr_state(e);
+			}
             EZ_RELEASE_MUTEX((*Lock()));
         }
     }
@@ -109,6 +116,7 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
             punch_dest.address = CENTRAL_PEER_IP;
             while (1) {
                 BOOL breakout = FALSE;
+				int failsafe = 0;
                 switch (state) {
                     case 0: // sending state
                         for (size_t j = 0; j < g_out_connections.size; j++) {
@@ -146,6 +154,7 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
                                 }
                             }
                             state = 2;
+							failsafe++;
                         }
                         EZ_CLEAN_BUFFER(ebuffer);
                         EZ_CLEAN_BUFFER(ackbuffer);
@@ -189,6 +198,7 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
                         break;
                     default: break;
                 }
+				if (failsafe > MAX_SEND_ATTEMPTS) breakout = TRUE;
                 if (breakout) break;
             }
         }
@@ -238,7 +248,6 @@ void CleanNetwork() {
     g_shutdown_network = TRUE;
     EZ_SIGNAL_COND(g_send_condition);
     EZ_RELEASE_MUTEX((*Lock()));
-    EZ_WAIT_THREAD(g_accept_thread);
     EZ_WAIT_THREAD(g_listen_thread);
     EZ_WAIT_THREAD(g_sender_thread);
     EZ_CLOSE_SERVER(g_listener);
