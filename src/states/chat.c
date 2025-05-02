@@ -8,7 +8,10 @@ Network* g_nref = NULL;
 size_t g_selected_friend = 0;
 int g_height, g_width = 0;
 int g_chat_cursor = 0;
+int g_chat_state = 0;
 char g_chat_buffer[MAX_MESSAGE_SIZE] = { 0 };
+char g_uuid_buffer[64] = { 0 };
+int g_uuid_cursor = 0;
 
 void draw_contacts() {
     for (size_t i = 0; i < g_nref->friends.size; i++) {
@@ -64,7 +67,11 @@ void draw_options() {
     for (int i = 0; i < g_width; i++) {
         mvaddch(g_height - 1, i, ' ');
     }
-    mvprintw(g_height - 1, 1, "(ENTR) Send | (ESC) Quit |");
+    if (g_chat_state == 0) {
+        mvprintw(g_height - 1, 1, "(ENTR) Send | (ESC) Quit | (TAB) Cycle | ^A Add Friend");
+    } else if (g_chat_state == 1) {
+        mvprintw(g_height - 1, 1, "(ENTR) Submit | (ESC) Quit | ^A Cancel");
+    }
     attroff(COLOR_PAIR(BLACK_GRAY));
     refresh();
 }
@@ -106,56 +113,42 @@ void draw_chat() {
     }
 }
 
-void ChatState(Event event) {
-	curs_set(1);
-    getmaxyx(stdscr, g_height, g_width);
-    g_nref = NetworkRef();
-    if (event.resize) {
-        clear();
-
-        // header bars
-        draw_headers();
-
-        // chat text
-        mvprintw(g_height - 4, 0, ">");
-
-        // contacts
-        draw_contacts();
-
-        // divider
-        draw_divider();
-
-        // chat
-        draw_chat();
-
-        // bottom bar
-        draw_options();
-    }
-    if (event.recieve) {
-        draw_headers();
-        draw_chat();
-    }
-    if (event.kevent >= 32 && event.kevent <= 126) {
-        if (g_chat_cursor >= MAX_MESSAGE_SIZE - 1) {
-            attron(COLOR_PAIR(WHITE_RED));
-            for (int i = 0; i < g_width; i++) {
-                mvaddch(g_height - 5, i, ' ');
+void draw_add_friend() {
+    draw_options();
+    attron(COLOR_PAIR(BLACK_WHITE));
+    for (int x = 0; x < 34; x++) {
+        for (int y = 0; y < 5; y++) {
+            if (y == 3 && x > 0 && x < 33) {
+                attroff(COLOR_PAIR(BLACK_WHITE));
             }
-            mvprintw(g_height - 5, g_width/2 - 16, "Maximum character limit reached!");
-            attroff(COLOR_PAIR(WHITE_RED));
-        } else {
-            g_chat_buffer[g_chat_cursor] = (char)event.kevent;
-            g_chat_cursor++;
+            mvaddch(g_height/2 - 3 + y, g_width/2 - 17 + x, ' ');
+            if (y == 3 && x > 0 && x < 33) {
+                attron(COLOR_PAIR(BLACK_WHITE));
+            }
         }
-    } else if (event.kevent == 8 && g_chat_cursor > 0) {
-        g_chat_cursor--;
-        g_chat_buffer[g_chat_cursor] = '\0';
-    } else if ((event.kevent == 13 || event.kevent == 10) && g_chat_cursor > 0) {
-        SendChat(&(g_nref->friends.data[g_selected_friend]), g_chat_buffer);
-        draw_chat();
-        g_chat_cursor = 0;
-        memset(g_chat_buffer, '\0', MAX_MESSAGE_SIZE);
     }
+    mvprintw(g_height/2 - 2, g_width/2 - 7, "Add New Friend");
+    attroff(COLOR_PAIR(BLACK_WHITE));
+    if (g_uuid_cursor != 32) {
+        attron(COLOR_PAIR(RED_BLACK));
+    }
+    mvprintw(g_height/2, g_width/2 - 16, "%s", g_uuid_buffer);
+    if (g_uuid_cursor != 32) {
+        attroff(COLOR_PAIR(RED_BLACK));
+    }
+}
+
+void draw_all() {
+    clear();
+    draw_headers();
+    mvprintw(g_height - 4, 0, ">");
+    draw_contacts();
+    draw_divider();
+    draw_chat();
+    draw_options();
+}
+
+void draw_current_text() {
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < g_width; j++) {
             mvaddch(g_height - 4 + i, j, ' ');
@@ -171,6 +164,86 @@ void ChatState(Event event) {
         strcpy(buffer, g_chat_buffer + (third_to_last_line * linewidth) + (i * linewidth));
         buffer[linewidth] = '\0';
         mvprintw(g_height - 4 + i, 2, buffer);
+    }
+}
+
+void ChatState(Event event) {
+	curs_set(1);
+    getmaxyx(stdscr, g_height, g_width);
+    g_nref = NetworkRef();
+    if (event.resize) {
+        draw_all();
+    }
+    if (event.recieve) {
+        draw_headers();
+        draw_chat();
+    }
+    if (event.kevent >= 32 && event.kevent <= 126) {
+        if (g_chat_state == 0) {
+            if (g_chat_cursor >= MAX_MESSAGE_SIZE - 1) {
+                attron(COLOR_PAIR(WHITE_RED));
+                for (int i = 0; i < g_width; i++) {
+                    mvaddch(g_height - 5, i, ' ');
+                }
+                mvprintw(g_height - 5, g_width/2 - 16, "Maximum character limit reached!");
+                attroff(COLOR_PAIR(WHITE_RED));
+            } else {
+                g_chat_buffer[g_chat_cursor] = (char)event.kevent;
+                g_chat_cursor++;
+            }
+        } else if (g_chat_state == 1) {
+            char mych = (char)event.kevent;
+            if (g_uuid_cursor < 32 && ((mych >= '0' && mych <= '9') || (mych >= 'a' && mych <= 'f'))) {
+                g_uuid_buffer[g_uuid_cursor] = mych;
+                g_uuid_cursor++;
+            }
+        }
+    } else if (event.kevent == 8) {
+        if (g_chat_state == 0 && g_chat_cursor > 0) {
+            g_chat_cursor--;
+            g_chat_buffer[g_chat_cursor] = '\0';
+        } else if (g_chat_state == 1 && g_uuid_cursor > 0) {
+            g_uuid_cursor--;
+            g_uuid_buffer[g_uuid_cursor] = '\0';
+        }
+    } else if ((event.kevent == 13 || event.kevent == 10)) {
+        if (g_chat_state == 0 && g_chat_cursor > 0) {
+            SendChat(&(g_nref->friends.data[g_selected_friend]), g_chat_buffer);
+            draw_chat();
+            g_chat_cursor = 0;
+            memset(g_chat_buffer, '\0', MAX_MESSAGE_SIZE);
+        } else if (g_chat_state == 1 && g_uuid_cursor == 32) {
+            User newuser = { 0 };
+            strcpy(newuser.name, "Unknown");
+            newuser.id.second = strtoull(g_uuid_buffer + 16, NULL, 16);
+            g_uuid_buffer[16] = '\0';
+            newuser.id.first = strtoull(g_uuid_buffer, NULL, 16);
+            ARRLIST_User_add(&(g_nref->friends), newuser);
+            memset(g_uuid_buffer, 0, 64);
+            g_uuid_cursor = 0;
+            g_chat_state = 0;
+            draw_all();
+        }
+    } else if (event.kevent == 1) {
+        if (g_chat_state == 1) {
+            memset(g_uuid_buffer, 0, 64);
+            g_uuid_cursor = 0;
+            g_chat_state = 0;
+            draw_all();
+        } else {
+            g_chat_state = 1;
+        }
+    } else if (event.kevent == 9 && g_chat_state == 0) {
+        g_chat_cursor = 0;
+        memset(g_chat_buffer, '\0', MAX_MESSAGE_SIZE);
+        g_selected_friend++;
+        if (g_selected_friend >= g_nref->friends.size) g_selected_friend = 0;
+        draw_all();
+    }
+    if (g_chat_state == 1) {
+        draw_add_friend();
+    } else {
+        draw_current_text();
     }
     refresh();
 }

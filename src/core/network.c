@@ -152,28 +152,35 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
                         break;
                     case 2: // attempt connection state
                         EZ_RELEASE_MUTEX((*Lock()));
-                        ez_Buffer* cnbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
-                        ez_Buffer* pbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
-                        cnp.to = qm.message->to;
-                        EZ_RECORD_BUFFER(cnbuffer, &cnp);
-                        state = 3;
-                        for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
-                            EZ_SERVER_THROW(g_thrower, punch_dest, cnbuffer);
-                            Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_thrower, pbuffer, 100000);
-                            if (dest.port != 0 && pbuffer->current_length == sizeof(PeerPacket)) {
-                                PeerPacket packet;
-                                memcpy(&packet, pbuffer->bytes, pbuffer->current_length);
-                                if (packet.type == PEER_PACKET && packet.destination.port != 0) {
-                                    lc.destination = packet.destination;
-                                    lc.user = qm.user;
-                                    ARRLIST_LinkedClient_add(&g_out_connections, lc);
-                                    state = 1;
-                                    break;
+                        if (uuideq(qm.message->to, g_network.id)) {
+                            lc.destination.port = SIGMSG_PORT;
+                            lc.user = qm.user;
+                            lc.destination.address = (Ipv4){{127,0,0,1}};
+                            state = 1;
+                        } else {
+                            ez_Buffer* cnbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
+                            ez_Buffer* pbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
+                            cnp.to = qm.message->to;
+                            EZ_RECORD_BUFFER(cnbuffer, &cnp);
+                            state = 3;
+                            for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
+                                EZ_SERVER_THROW(g_thrower, punch_dest, cnbuffer);
+                                Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_thrower, pbuffer, 100000);
+                                if (dest.port != 0 && pbuffer->current_length == sizeof(PeerPacket)) {
+                                    PeerPacket packet;
+                                    memcpy(&packet, pbuffer->bytes, pbuffer->current_length);
+                                    if (packet.type == PEER_PACKET && packet.destination.port != 0) {
+                                        lc.destination = packet.destination;
+                                        lc.user = qm.user;
+                                        ARRLIST_LinkedClient_add(&g_out_connections, lc);
+                                        state = 1;
+                                        break;
+                                    }
                                 }
                             }
+                            EZ_CLEAN_BUFFER(cnbuffer);
+                            EZ_CLEAN_BUFFER(pbuffer);
                         }
-                        EZ_CLEAN_BUFFER(cnbuffer);
-                        EZ_CLEAN_BUFFER(pbuffer);
                         EZ_LOCK_MUTEX((*Lock()));
                         break;
                     case 3: // send to central
