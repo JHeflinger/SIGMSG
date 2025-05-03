@@ -233,7 +233,7 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
                             ez_Buffer* ackbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
                             EZ_RECORD_BUFFER(ebuffer, qm.message);
                             for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
-                                punch_dest(lc.destination);
+                                throw_punch(lc.destination);
                                 EZ_SERVER_THROW(g_server, lc.destination, ebuffer);
                                 Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ackbuffer, 100000);
                                 while (dest.port != 0) {
