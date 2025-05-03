@@ -22,7 +22,7 @@ ARRLIST_QueuedMessage g_send_queue = { 0 };
 BOOL g_shutdown_network = FALSE;
 
 void throw_punch(Destination destination) {
-    for (int i = 0; i < 2000; i++) {
+    for (int i = 0; i < 20000; i++) {
         ez_Buffer* buffer = EZ_GENERATE_BUFFER(sizeof(FistPacket));
         FistPacket fp = { FIST_PACKET };
         EZ_RECORD_BUFFER(buffer, &fp);
@@ -32,27 +32,48 @@ void throw_punch(Destination destination) {
 }
 
 void handle_message_packet(Destination destination, ez_Buffer* buffer) {
-    if (destination.port == 0 || buffer->current_length < sizeof(Message)) return;
-    Message msg = { 0 };
-	EZ_TRANSLATE_BUFFER(buffer, &msg);
-    if (msg.type != MESSAGE_PACKET) return;
-    ez_Buffer* b = EZ_GENERATE_BUFFER(sizeof(AckPacket));
-	AckPacket ack = { ACK_PACKET, {msg.id.first, msg.id.second}};
-	EZ_RECORD_BUFFER(b, &ack);
-	EZ_SERVER_THROW(g_server, destination, b);
-    EZ_LOCK_MUTEX((*Lock()));
-	for (size_t j = 0; j < g_network.friends.size; j++) {
-		if (uuideq(g_network.friends.data[j].id, msg.from)) {
-	        ARRLIST_Message_add(&(g_network.friends.data[j].history), msg);
-			break;
-		}
-	}
-	AppState curr_state = GetState();
-	Event e = { 0 };
-	e.recieve = TRUE;
-	curr_state(e);
-    EZ_RELEASE_MUTEX((*Lock()));
-    EZ_CLEAN_BUFFER(b);
+    if (destination.port == 0 || buffer->current_length < sizeof(Header)) return;
+    Header header;
+    memcpy(&header, buffer->bytes, sizeof(Header));
+    switch (header) {
+        case MESSAGE_PACKET:
+            Message msg = { 0 };
+            EZ_TRANSLATE_BUFFER(buffer, &msg);
+            if (msg.type != MESSAGE_PACKET) return;
+            ez_Buffer* b = EZ_GENERATE_BUFFER(sizeof(AckPacket));
+            AckPacket ack = { ACK_PACKET, {msg.id.first, msg.id.second}};
+            EZ_RECORD_BUFFER(b, &ack);
+            EZ_SERVER_THROW(g_server, destination, b);
+            EZ_LOCK_MUTEX((*Lock()));
+            for (size_t j = 0; j < g_network.friends.size; j++) {
+                if (uuideq(g_network.friends.data[j].id, msg.from)) {
+                    ARRLIST_Message_add(&(g_network.friends.data[j].history), msg);
+                    break;
+                }
+            }
+            AppState curr_state = GetState();
+            Event e = { 0 };
+            e.recieve = TRUE;
+            curr_state(e);
+            EZ_RELEASE_MUTEX((*Lock()));
+            EZ_CLEAN_BUFFER(b);
+            return;
+        case FIST_PACKET:
+            if (buffer->current_length != sizeof(FistPacket)) {
+                EZ_WARN("Wrong fist packet size");
+                return;
+            }
+            return;
+        case PUNCH_PACKET:
+            if (buffer->current_length != sizeof(PunchPacket)) {
+                EZ_WARN("Wrong punch packet size");
+                return;
+            }
+            PunchPacket p = { 0 };
+			EZ_TRANSLATE_BUFFER(buffer, &p);
+            throw_punch(p.destination);
+            return;
+    }
 }
 
 BOOL handle_connect_return_packet(Destination destination, ez_Buffer* buffer, PeerPacket* packet) {
