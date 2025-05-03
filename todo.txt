@@ -1,23 +1,25 @@
 immediate:
+    - convert to message forwarding
     - put in id via command line
     - make registering a little more secure
     - pad id with 0s in the beginning
     - send only as much as needed from a message
     - ensure no duplicate messages using mid
     - ensure date order of messages
+    - offline messages
+    - unread messages
+    - implement move cursor around
+    - lock chat sending while offline
+    - implement sent / delivered
+    - get udp hole punching working
+    - if still unable to get p2p working, refactor to make server communication efficient
+    - move sigpunch to sigmsg with proper headers and tinyconf and allat
     - save data
     - safe file saving
     - file save on program termination
     - periodic saving
-    - offline messages
-    - implement sent / delivered
-    - unread messages
-    - implement move cursor around
     - implement friend info settings
-    - lock chat sending while offline
     - efficient data loading
-    - get udp hole punching working
-    - if still unable to get p2p working, refactor to make server communication efficient
     - implement group chats
     - implement servers
     - worry about endianess / encoding

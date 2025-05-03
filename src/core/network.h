@@ -5,7 +5,7 @@
 #include <easybool.h>
 #include <easynet.h>
 
-#define MAX_MESSAGE_SIZE 2048
+#define MAX_MESSAGE_SIZE 1024
 #define MAX_USERNAME_SIZE 18
 #define SIGMSG_PORT 9876
 #define MAX_SEND_ATTEMPTS 3
