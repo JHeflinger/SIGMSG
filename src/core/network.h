@@ -19,6 +19,7 @@ typedef enum {
     FAILURE_PACKET = 5,
 	PUNCH_PACKET = 6,
 	FIST_PACKET = 7,
+    TRANSLATE_PACKET = 8
 } Header;
 
 typedef struct {
@@ -41,8 +42,14 @@ typedef struct {
 } AckPacket;
 
 typedef struct {
+	Header type;
+	Destination translation;
+} TranslatePacket;
+
+typedef struct {
     Header type;
     UUID peer;
+	Destination private_dest;
 } RegisterPacket;
 
 typedef struct {
@@ -53,6 +60,7 @@ typedef struct {
 typedef struct {
 	Header type;
 	Destination destination;
+	Destination private_dest;
 } PeerPacket;
 
 typedef struct {

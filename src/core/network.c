@@ -20,6 +20,7 @@ EZ_THREAD g_handler_thread;
 ARRLIST_LinkedClient g_out_connections = { 0 };
 ARRLIST_QueuedMessage g_send_queue = { 0 };
 BOOL g_shutdown_network = FALSE;
+Destination g_translated_destination = { 0 };
 
 void throw_punch(Destination destination) {
     ez_Buffer* buffer = EZ_GENERATE_BUFFER(sizeof(FistPacket));
@@ -184,15 +185,18 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
             RegisterPacket reg = { 0 };
             reg.type = REGISTER_PACKET;
             reg.peer = g_network.id;
+            reg.private_dest.port = SIGMSG_PORT;
+            reg.private_dest.address = EZ_GET_MY_IP();
             EZ_RECORD_BUFFER(ebuffer, &reg);
             EZ_SERVER_THROW(g_server, punch_dest, ebuffer);
             Destination back = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ebuffer, 100000);
-            if (back.port != 0 && ebuffer->current_length == sizeof(AckPacket)) {
-                AckPacket ack;
-                memcpy(&ack, ebuffer->bytes, sizeof(AckPacket));
-                if (ack.type == ACK_PACKET) {
+            if (back.port != 0 && ebuffer->current_length == sizeof(TranslatePacket)) {
+                TranslatePacket ack;
+                EZ_TRANSLATE_BUFFER(ebuffer, &ack);
+                if (ack.type == TRANSLATE_PACKET) {
                     EZ_LOCK_MUTEX((*Lock()));
                     g_network.online = TRUE;
+                    g_translated_destination = ack.translation;
                     AppState curr_state = GetState();
                     Event e = { 0 };
                     e.recieve = TRUE;
@@ -231,6 +235,7 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
                             ez_Buffer* ackbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
                             EZ_RECORD_BUFFER(ebuffer, qm.message);
                             for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
+                                //printdest(lc.destination);
                                 EZ_SERVER_THROW(g_server, lc.destination, ebuffer);
                                 Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ackbuffer, 100000);
                                 while (dest.port != 0) {
@@ -276,7 +281,10 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
                                         PeerPacket packet;
                                         if (handle_connect_return_packet(dest, pbuffer, &packet)) {
                                             if (packet.destination.port != 0) {
-                                                lc.destination = packet.destination;
+                                                if (ipeq(packet.destination.address, g_translated_destination.address))
+                                                    lc.destination = packet.private_dest;
+                                                else
+                                                    lc.destination = packet.destination;
                                                 lc.user = qm.user;
                                                 ARRLIST_LinkedClient_add(&g_out_connections, lc);
                                                 state = 1;

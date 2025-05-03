@@ -1,8 +1,8 @@
 immediate:
-    - convert to message forwarding
     - put in id via command line
-    - make registering a little more secure
     - pad id with 0s in the beginning
+    - make it use private ip if on local network
+    - if recv fails then try again
     - send only as much as needed from a message
     - ensure no duplicate messages using mid
     - ensure date order of messages
@@ -11,8 +11,6 @@ immediate:
     - implement move cursor around
     - lock chat sending while offline
     - implement sent / delivered
-    - get udp hole punching working
-    - if still unable to get p2p working, refactor to make server communication efficient
     - move sigpunch to sigmsg with proper headers and tinyconf and allat
     - save data
     - safe file saving
@@ -20,6 +18,7 @@ immediate:
     - periodic saving
     - implement friend info settings
     - efficient data loading
+    - make it able to move to different network
     - implement group chats
     - implement servers
     - worry about endianess / encoding
