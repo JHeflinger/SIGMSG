@@ -89,7 +89,13 @@ EZ_THREAD_RETURN_TYPE listen_thread(EZ_THREAD_PARAMETER_TYPE params) {
 	            Event e = { 0 };
 			    e.recieve = TRUE;
 				curr_state(e);
-			}
+			} else if (header == PUNCH_PACKET) {
+                PunchPacket p = { 0 };
+				EZ_TRANSLATE_BUFFER(ebuffer, &p);
+                FistPacket fp = { FIST_PACKET };
+                EZ_RECORD_BUFFER(ebuffer, &fp);
+                EZ_SERVER_THROW(g_listener, p.destination, ebuffer);
+            }
             EZ_RELEASE_MUTEX((*Lock()));
         }
     }
@@ -114,9 +120,9 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
             Destination punch_dest;
             punch_dest.port = SIGMSG_PORT;
             punch_dest.address = CENTRAL_PEER_IP;
+			int failsafe = 0;
             while (1) {
                 BOOL breakout = FALSE;
-				int failsafe = 0;
                 switch (state) {
                     case 0: // sending state
                         for (size_t j = 0; j < g_out_connections.size; j++) {
@@ -161,7 +167,7 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
                         break;
                     case 2: // attempt connection state
                         EZ_RELEASE_MUTEX((*Lock()));
-                        if (uuideq(qm.message->to, g_network.id)) {
+                        if (FALSE && uuideq(qm.message->to, g_network.id)) {
                             lc.destination.port = SIGMSG_PORT;
                             lc.user = qm.user;
                             lc.destination.address = (Ipv4){{127,0,0,1}};
@@ -198,7 +204,7 @@ EZ_THREAD_RETURN_TYPE sender_thread(EZ_THREAD_PARAMETER_TYPE params) {
                         break;
                     default: break;
                 }
-				if (failsafe > MAX_SEND_ATTEMPTS) breakout = TRUE;
+				if (failsafe > MAX_SEND_ATTEMPTS) state = 3;
                 if (breakout) break;
             }
         }
