@@ -9,6 +9,7 @@
 #define MAX_USERNAME_SIZE 18
 #define SIGMSG_PORT 9876
 #define MAX_SEND_ATTEMPTS 10
+#define REC_TIMEOUT 500000
 
 typedef enum {
     MESSAGE_PACKET = 0,

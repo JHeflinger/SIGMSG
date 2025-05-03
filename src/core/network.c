@@ -189,7 +189,7 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
             reg.private_dest.address = EZ_GET_MY_IP();
             EZ_RECORD_BUFFER(ebuffer, &reg);
             EZ_SERVER_THROW(g_server, punch_dest, ebuffer);
-            Destination back = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ebuffer, 100000);
+            Destination back = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ebuffer, REC_TIMEOUT);
             if (back.port != 0 && ebuffer->current_length == sizeof(TranslatePacket)) {
                 TranslatePacket ack;
                 EZ_TRANSLATE_BUFFER(ebuffer, &ack);
@@ -237,13 +237,13 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
                             for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
                                 //printdest(lc.destination);
                                 EZ_SERVER_THROW(g_server, lc.destination, ebuffer);
-                                Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ackbuffer, 100000);
+                                Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ackbuffer, REC_TIMEOUT);
                                 while (dest.port != 0) {
                                     if (handle_send_return_packet(dest, ackbuffer, qm)) {
                                         breakout = TRUE;
                                         break;
                                     }
-                                    dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ackbuffer, 100000);
+                                    dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ackbuffer, REC_TIMEOUT);
                                 }
                                 if (breakout) break;
                             }
@@ -276,7 +276,7 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
                                 state = 3;
                                 for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
                                     EZ_SERVER_THROW(g_server, punch_dest, cnbuffer);
-                                    Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, pbuffer, 100000);
+                                    Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, pbuffer, REC_TIMEOUT);
                                     while (dest.port != 0) {
                                         PeerPacket packet;
                                         if (handle_connect_return_packet(dest, pbuffer, &packet)) {
@@ -294,7 +294,7 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
                                                 break;
                                             }
                                         }
-                                        dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, pbuffer, 100000);
+                                        dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, pbuffer, REC_TIMEOUT);
                                     }
                                     if (state == 1) break;
                                 }
@@ -315,7 +315,7 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
             ARRLIST_QueuedMessage_clear(&qm_copy);
 
             // handle received messages
-            Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ebuffer, 100000);
+            Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ebuffer, REC_TIMEOUT);
             handle_message_packet(dest, ebuffer);
         }
     }
