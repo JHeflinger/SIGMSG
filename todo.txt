@@ -1,6 +1,7 @@
 immediate:
     - put in id via command line
     - pad id with 0s in the beginning
+    - check cmdline args for unknown args and valid id arg and not too long id arg
     - make it use private ip if on local network
     - if recv fails then try again
     - send only as much as needed from a message

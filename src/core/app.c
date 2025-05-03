@@ -2,6 +2,7 @@
 #include "util/colors.h"
 #include "util/animations.h"
 #include "states/login.h"
+#include "states/chat.h"
 #include "core/platform.h"
 #include "core/network.h"
 #include <string.h>
@@ -28,7 +29,11 @@ void Initialize() {
     timeout(-1);
     InitializeColors();
     if (g_flags & BOOT_ANIM) BootAnimation();
-    ChangeState(LoginState);
+    if (NetworkRef()->id.first == 0 && NetworkRef()->id.second == 0) {
+        ChangeState(LoginState);
+    } else {
+        ChangeState(ChatState);
+    }
 }
 
 void Clean() {
@@ -103,9 +108,30 @@ void Listen() {
 
 AppFlags GetFlagsFromArgs(int argc, const char** argv) {
     AppFlags flags = NO_APP_FLAGS;
-    for (int i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "-boot_anim") == 0)
+    for (int i = 1; i < argc; i++) {
+        if (strlen(argv[i]) > 3 && argv[i][0] == '-' && argv[i][1] == 'i' && argv[i][2] == 'd') {
+            if (strlen(argv[i]) <= 19) {
+                UUID id = { 0 };
+                id.second = strtoull(argv[i] + 3, NULL, 16);
+                NetworkRef()->id = id;
+                continue;
+            } else {
+                UUID id = { 0 };
+                id.second = strtoull(argv[i] + strlen(argv[i]) - 16, NULL, 16);
+                char buf[64] = { 0 };
+                strcpy(buf, argv[i]);
+                buf[strlen(argv[i]) - 16] = '\0';
+                id.first = strtoull(buf + 3, NULL, 16);
+                NetworkRef()->id = id;
+                continue;
+            }
+        }
+        if (strcmp(argv[i], "-boot_anim") == 0) {
             flags |= BOOT_ANIM;
+            continue;
+        }
+        printf("Unknown argument detected \"%s\"\n", argv[i]);
+        exit(1);
     }
     return flags;
 }

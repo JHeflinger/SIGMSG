@@ -8,7 +8,7 @@
 #define MAX_MESSAGE_SIZE 128
 #define MAX_USERNAME_SIZE 18
 #define SIGMSG_PORT 9876
-#define MAX_SEND_ATTEMPTS 3
+#define MAX_SEND_ATTEMPTS 10
 
 typedef enum {
     MESSAGE_PACKET = 0,

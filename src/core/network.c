@@ -332,8 +332,6 @@ UUID GenerateUUID() {
     for (int i = 0; i < 4; i++) {
         id.second = (id.second << 16) | (rand() & 0xFFFF);
     }
-    id.first = 0;
-    id.second = 2;
     return id;
 }
 
