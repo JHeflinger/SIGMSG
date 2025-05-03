@@ -22,7 +22,7 @@ ARRLIST_QueuedMessage g_send_queue = { 0 };
 BOOL g_shutdown_network = FALSE;
 
 void throw_punch(Destination destination) {
-    for (int i = 0; i < 9000) {
+    for (int i = 0; i < 9000; i++) {
     ez_Buffer* buffer = EZ_GENERATE_BUFFER(sizeof(FistPacket));
     FistPacket fp = { FIST_PACKET };
     EZ_RECORD_BUFFER(buffer, &fp);
