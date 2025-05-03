@@ -58,12 +58,6 @@ void handle_message_packet(Destination destination, ez_Buffer* buffer) {
             EZ_RELEASE_MUTEX((*Lock()));
             EZ_CLEAN_BUFFER(b);
             return;
-        case FIST_PACKET:
-            if (buffer->current_length != sizeof(FistPacket)) {
-                EZ_WARN("Wrong fist packet size");
-                return;
-            }
-            return;
         case PUNCH_PACKET:
             if (buffer->current_length != sizeof(PunchPacket)) {
                 EZ_WARN("Wrong punch packet size");
@@ -73,6 +67,7 @@ void handle_message_packet(Destination destination, ez_Buffer* buffer) {
 			EZ_TRANSLATE_BUFFER(buffer, &p);
             throw_punch(p.destination);
             return;
+        default: return;
     }
 }
 
