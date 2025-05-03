@@ -21,6 +21,15 @@ ARRLIST_LinkedClient g_out_connections = { 0 };
 ARRLIST_QueuedMessage g_send_queue = { 0 };
 BOOL g_shutdown_network = FALSE;
 
+void throw_punch(Destination destination) {
+    for (int i = 0; i < 2000; i++) {
+        ez_Buffer* buffer = EZ_GENERATE_BUFFER(sizeof(FistPacket));
+        FistPacket fp = { FIST_PACKET };
+        EZ_SERVER_THROW(g_server, destination, fist);
+        EZ_CLEAN_BUFFER(buffer);
+    }
+}
+
 void handle_message_packet(Destination destination, ez_Buffer* buffer) {
     if (destination.port == 0 || buffer->current_length < sizeof(Message)) return;
     Message msg = { 0 };
@@ -75,13 +84,9 @@ BOOL handle_connect_return_packet(Destination destination, ez_Buffer* buffer, Pe
                 EZ_WARN("Wrong punch packet size");
                 return FALSE;
             }
-            ez_Buffer* b = EZ_GENERATE_BUFFER(sizeof(FistPacket));
             PunchPacket p = { 0 };
 			EZ_TRANSLATE_BUFFER(buffer, &p);
-            FistPacket fp = { FIST_PACKET };
-            EZ_RECORD_BUFFER(b, &fp);
-            EZ_SERVER_THROW(g_server, p.destination, b);
-            EZ_CLEAN_BUFFER(b);
+            throw_punch(p.destination);
             return FALSE;
         case FIST_PACKET:
             if (buffer->current_length != sizeof(FistPacket)) {
@@ -128,13 +133,9 @@ BOOL handle_send_return_packet(Destination destination, ez_Buffer* buffer, Queue
                 EZ_WARN("Wrong punch packet size");
                 return FALSE;
             }
-            ez_Buffer* b = EZ_GENERATE_BUFFER(sizeof(FistPacket));
             PunchPacket p = { 0 };
 			EZ_TRANSLATE_BUFFER(buffer, &p);
-            FistPacket fp = { FIST_PACKET };
-            EZ_RECORD_BUFFER(b, &fp);
-            EZ_SERVER_THROW(g_server, p.destination, b);
-            EZ_CLEAN_BUFFER(b);
+            throw_punch(p.destination);
             return FALSE;
         case FIST_PACKET:
             if (buffer->current_length != sizeof(FistPacket)) {
@@ -303,6 +304,8 @@ UUID GenerateUUID() {
     for (int i = 0; i < 4; i++) {
         id.second = (id.second << 16) | (rand() & 0xFFFF);
     }
+    id.first = 0;
+    id.second = 2;
     return id;
 }
 
