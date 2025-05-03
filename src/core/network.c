@@ -22,13 +22,11 @@ ARRLIST_QueuedMessage g_send_queue = { 0 };
 BOOL g_shutdown_network = FALSE;
 
 void throw_punch(Destination destination) {
-    for (int i = 0; i < 20000; i++) {
-        ez_Buffer* buffer = EZ_GENERATE_BUFFER(sizeof(FistPacket));
-        FistPacket fp = { FIST_PACKET };
-        EZ_RECORD_BUFFER(buffer, &fp);
-        EZ_SERVER_THROW(g_server, destination, buffer);
-        EZ_CLEAN_BUFFER(buffer);
-    }
+    ez_Buffer* buffer = EZ_GENERATE_BUFFER(sizeof(FistPacket));
+    FistPacket fp = { FIST_PACKET };
+    EZ_RECORD_BUFFER(buffer, &fp);
+    EZ_SERVER_THROW(g_server, destination, buffer);
+    EZ_CLEAN_BUFFER(buffer);
 }
 
 void handle_message_packet(Destination destination, ez_Buffer* buffer) {
@@ -231,7 +229,6 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
                         case 1: // send over connection state
                             ez_Buffer* ebuffer = EZ_GENERATE_BUFFER(sizeof(Message));
                             ez_Buffer* ackbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
-                            throw_punch(lc.destination);
                             EZ_RECORD_BUFFER(ebuffer, qm.message);
                             for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
                                 EZ_SERVER_THROW(g_server, lc.destination, ebuffer);
@@ -278,11 +275,16 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
                                     while (dest.port != 0) {
                                         PeerPacket packet;
                                         if (handle_connect_return_packet(dest, pbuffer, &packet)) {
-                                            lc.destination = packet.destination;
-                                            lc.user = qm.user;
-                                            ARRLIST_LinkedClient_add(&g_out_connections, lc);
-                                            state = 1;
-                                            break;
+                                            if (packet.destination.port != 0) {
+                                                lc.destination = packet.destination;
+                                                lc.user = qm.user;
+                                                ARRLIST_LinkedClient_add(&g_out_connections, lc);
+                                                state = 1;
+                                                break;
+                                            } else {
+                                                state = 3;
+                                                break;
+                                            }
                                         }
                                         dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, pbuffer, 100000);
                                     }
