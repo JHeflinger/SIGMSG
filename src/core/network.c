@@ -22,13 +22,11 @@ ARRLIST_QueuedMessage g_send_queue = { 0 };
 BOOL g_shutdown_network = FALSE;
 
 void throw_punch(Destination destination) {
-    for (int i = 0; i < 9000; i++) {
     ez_Buffer* buffer = EZ_GENERATE_BUFFER(sizeof(FistPacket));
     FistPacket fp = { FIST_PACKET };
     EZ_RECORD_BUFFER(buffer, &fp);
     EZ_SERVER_THROW(g_server, destination, buffer);
     EZ_CLEAN_BUFFER(buffer);
-    }
 }
 
 void handle_message_packet(Destination destination, ez_Buffer* buffer) {
@@ -233,7 +231,6 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
                             ez_Buffer* ackbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
                             EZ_RECORD_BUFFER(ebuffer, qm.message);
                             for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
-                                throw_punch(lc.destination);
                                 EZ_SERVER_THROW(g_server, lc.destination, ebuffer);
                                 Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ackbuffer, 100000);
                                 while (dest.port != 0) {
