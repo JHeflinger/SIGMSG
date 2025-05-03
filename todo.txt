@@ -1,4 +1,7 @@
 immediate:
+    - get udp hole punching working
+    - make registering a little more secure
+    - pad id with 0s in the beginning
     - send only as much as needed from a message
     - ensure no duplicate messages using mid
     - ensure date order of messages
