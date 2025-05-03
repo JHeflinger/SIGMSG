@@ -215,6 +215,7 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
                         case 1: // send over connection state
                             ez_Buffer* ebuffer = EZ_GENERATE_BUFFER(sizeof(Message));
                             ez_Buffer* ackbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
+                            throw_punch(lc.destination);
                             EZ_RECORD_BUFFER(ebuffer, qm.message);
                             for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
                                 EZ_SERVER_THROW(g_server, lc.destination, ebuffer);
