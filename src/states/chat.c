@@ -230,7 +230,7 @@ void ChatState(Event event) {
             g_uuid_buffer[g_uuid_cursor] = '\0';
         }
     } else if ((event.kevent == 13 || event.kevent == 10)) {
-        if (g_chat_state == 0 && g_chat_cursor > 0 && g_nref.online) {
+        if (g_chat_state == 0 && g_chat_cursor > 0 && g_nref->online) {
             SendChat(&(g_nref->friends.data[g_selected_friend]), g_chat_buffer);
             draw_chat();
             g_chat_cursor = 0;
