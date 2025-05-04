@@ -196,6 +196,7 @@ void ChatState(Event event) {
     if (event.recieve) {
         draw_headers();
         draw_chat();
+        draw_contacts();
     }
     if (event.kevent >= 32 && event.kevent <= 126) {
         if (g_chat_state == 0) {
