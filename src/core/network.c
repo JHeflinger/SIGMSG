@@ -43,6 +43,7 @@ void add_message_to_history(ARRLIST_Message* history, Message msg) {
             return;
         } else if (cmpdate(msg.time, history->data[ind].time)) {
             ARRLIST_Message_insert(history, msg, ind + 1);
+            return;
         } 
     }
 }
