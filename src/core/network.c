@@ -33,6 +33,10 @@ BOOL cmpdate(Timestamp a, Timestamp b) {
 }
 
 void add_message_to_history(ARRLIST_Message* history, Message msg) {
+    if (history->size == 0) {
+        ARRLIST_Message_add(history, msg);
+        return;
+    }
     for (size_t i = history->size; i > 0; i--) {
         size_t ind = i - 1;
         if (uuideq(msg.id, history->data[ind].id)) {
