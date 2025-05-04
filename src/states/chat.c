@@ -169,9 +169,9 @@ void draw_add_friend() {
 
 void draw_all() {
     clear();
+    draw_contacts();
     draw_headers();
     mvprintw(g_height - 4, 0, ">");
-    draw_contacts();
     draw_divider();
     draw_chat();
     draw_options();

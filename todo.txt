@@ -1,12 +1,11 @@
-immediate:
-    - no new messages stop statically defining that
-    - no repeat names in between messages e.g. one guy sending 5 messages shouldn't be separate 5 guys
+todo:
+    - implement move cursor around
     - implement friend info settings
-    - offline messages
     - implement sent / delivered
+    - offline messages
     - send only as much as needed from a message
     - move sigpunch to sigmsg with proper headers and tinyconf and allat
-    - implement move cursor around
+    - no repeat names in between messages e.g. one guy sending 5 messages shouldn't be separate 5 guys
     - history should be scrollable
     - timezones
     - save data
