@@ -65,11 +65,20 @@ void handle_message_packet(Destination destination, ez_Buffer* buffer) {
             EZ_RECORD_BUFFER(b, &ack);
             EZ_SERVER_THROW(g_server, destination, b);
             EZ_LOCK_MUTEX((*Lock()));
+            BOOL foundfriend = FALSE;
             for (size_t j = 0; j < g_network.friends.size; j++) {
                 if (uuideq(g_network.friends.data[j].id, msg.from)) {
                     add_message_to_history(&(g_network.friends.data[j].history), msg);
+                    foundfriend = TRUE;
                     break;
                 }
+            }
+            if (!foundfriend) {
+                User newuser = { 0 };
+                strcpy(newuser.name, "Unknown");
+                newuser.id = msg.from;
+                ARRLIST_User_add(&(g_network.friends), newuser);
+                add_message_to_history(&(g_network.friends.data[g_network.friends.size - 1].history), msg);
             }
             AppState curr_state = GetState();
             Event e = { 0 };
@@ -406,6 +415,7 @@ void SendChat(User* user, const char* chat) {
     msg.time.second = tm_info->tm_sec;
     msg.from = g_network.id;
     msg.to = user->id;
+    msg.id = GenerateUUID();
     ARRLIST_Message_add(&(user->history), msg);
     ARRLIST_QueuedMessage_add(&g_send_queue, (QueuedMessage){ user, &(user->history.data[user->history.size - 1]) });
 }

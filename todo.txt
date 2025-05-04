@@ -4,6 +4,7 @@ immediate:
     - unread messages
     - lock chat sending while offline
 
+    - improve punching
     - offline messages
     - implement sent / delivered
     - send only as much as needed from a message
@@ -18,6 +19,7 @@ immediate:
     - efficient data loading
     - make it able to move to different network
     - implement group chats
+    - implicit friends are added to pending requests
     - implement servers
     - worry about endianess / encoding
     - implement voice chat
