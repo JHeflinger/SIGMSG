@@ -1,6 +1,4 @@
 immediate:
-    - ensure date order of messages && ensure no duplicate messages using mid during
-    - implicit add friend
     - unread messages
     - lock chat sending while offline
 

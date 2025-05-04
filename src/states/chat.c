@@ -18,6 +18,7 @@ void draw_contacts() {
         if (i == g_selected_friend) {
             attron(COLOR_PAIR(BLACK_WHITE));
             for (size_t j = 0; j < MAX_USERNAME_SIZE + 3; j++) mvaddch(2 + i, 1 + j, ' ');
+            if (g_nref->friends.data[i].unread) g_nref->friends.data[i].unread = FALSE;
         }
         mvprintw(2 + i, 1, g_nref->friends.data[i].name);
         if (g_nref->friends.data[i].unread) {

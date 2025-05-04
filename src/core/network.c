@@ -70,21 +70,23 @@ void handle_message_packet(Destination destination, ez_Buffer* buffer) {
             EZ_RECORD_BUFFER(b, &ack);
             EZ_SERVER_THROW(g_server, destination, b);
             EZ_LOCK_MUTEX((*Lock()));
-            BOOL foundfriend = FALSE;
+            User* friend = NULL;
             for (size_t j = 0; j < g_network.friends.size; j++) {
                 if (uuideq(g_network.friends.data[j].id, msg.from)) {
-                    add_message_to_history(&(g_network.friends.data[j].history), msg);
-                    foundfriend = TRUE;
+                    friend = &(g_network.friends.data[j]);
                     break;
                 }
             }
-            if (!foundfriend) {
+            if (friend == NULL) {
                 User newuser = { 0 };
                 strcpy(newuser.name, "Unknown");
                 newuser.id = msg.from;
                 ARRLIST_User_add(&(g_network.friends), newuser);
-                add_message_to_history(&(g_network.friends.data[g_network.friends.size - 1].history), msg);
+                friend = &(g_network.friends.data[g_network.friends.size - 1]);
             }
+            size_t before = friend->history.size;
+            add_message_to_history(&(friend->history), msg);
+            if (before != friend->history.size) friend->unread = TRUE;
             AppState curr_state = GetState();
             Event e = { 0 };
             e.recieve = TRUE;
