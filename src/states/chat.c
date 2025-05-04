@@ -241,7 +241,14 @@ void ChatState(Event event) {
             newuser.id.second = strtoull(g_uuid_buffer + 16, NULL, 16);
             g_uuid_buffer[16] = '\0';
             newuser.id.first = strtoull(g_uuid_buffer, NULL, 16);
-            ARRLIST_User_add(&(g_nref->friends), newuser);
+            BOOL found = FALSE;
+            for (size_t i = 0; i < g_nref->friends.size; i++) {
+                if (uuideq(g_nref->friends.data[i].id, newuser.id)) {
+                    found = TRUE;
+                    break;
+                }
+            }
+            if (!found) ARRLIST_User_add(&(g_nref->friends), newuser);
             memset(g_uuid_buffer, 0, 64);
             g_uuid_cursor = 0;
             g_chat_state = 0;

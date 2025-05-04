@@ -1,16 +1,19 @@
 immediate:
-    - improve punching
+    - no duplicate users
+    - no new messages stop statically defining that
+    - no repeat names in between messages e.g. one guy sending 5 messages shouldn't be separate 5 guys
+    - implement friend info settings
     - offline messages
     - implement sent / delivered
     - send only as much as needed from a message
     - move sigpunch to sigmsg with proper headers and tinyconf and allat
     - implement move cursor around
+    - history should be scrollable
     - timezones
     - save data
     - safe file saving
     - file save on program termination
     - periodic saving
-    - implement friend info settings
     - efficient data loading
     - make it able to move to different network
     - implement group chats

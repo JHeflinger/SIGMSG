@@ -71,9 +71,9 @@ void handle_message_packet(Destination destination, ez_Buffer* buffer) {
             EZ_SERVER_THROW(g_server, destination, b);
             EZ_LOCK_MUTEX((*Lock()));
             User* friend = NULL;
-            for (size_t j = 0; j < g_network.friends.size; j++) {
-                if (uuideq(g_network.friends.data[j].id, msg.from)) {
-                    friend = &(g_network.friends.data[j]);
+            for (size_t i = 0; i < g_network.friends.size; i++) {
+                if (uuideq(g_network.friends.data[i].id, msg.from)) {
+                    friend = &(g_network.friends.data[i]);
                     break;
                 }
             }
