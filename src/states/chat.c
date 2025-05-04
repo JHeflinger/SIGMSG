@@ -43,7 +43,16 @@ void draw_headers() {
         mvaddch(g_height - 5, i, ' ');
     }
     mvprintw(0, 1, "SIGMSG %s", SM_VERSION);
-    mvprintw(0, g_width - 16, "No new messages");
+    int unread = 0;
+    for (size_t i = 0; i < g_nref->friends.size; i++) {
+        if (g_nref->friends.data[i].unread) unread++;
+    }
+    char msgbuf[128] = { 0 };
+    if (unread > 0)
+        sprintf(msgbuf, "%d unread chats", unread);
+    else
+        sprintf(msgbuf, "No new messages");
+    mvprintw(0, g_width - strlen(msgbuf) - 1, "%s", msgbuf);
     char idbuff[64] = { 0 };
     char padbuff[64] = { 0 };
     sprintf(idbuff, "%" PRIx64 "%" PRIx64, g_nref->id.first, g_nref->id.second);
