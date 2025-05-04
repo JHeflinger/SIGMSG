@@ -110,12 +110,18 @@ AppFlags GetFlagsFromArgs(int argc, const char** argv) {
     AppFlags flags = NO_APP_FLAGS;
     for (int i = 1; i < argc; i++) {
         if (strlen(argv[i]) > 3 && argv[i][0] == '-' && argv[i][1] == 'i' && argv[i][2] == 'd') {
+            for (size_t j = 3; j < strlen(argv[i]); j++) {
+                if (!((argv[i][j] >= '0' && argv[i][j] <= '9') || (argv[i][j] >= 'a' && argv[i][j] <= 'f'))) {
+                    printf("Invalid ID# given - please use only lowercase hexidecimal digits.");
+                    exit(1);
+                }
+            }
             if (strlen(argv[i]) <= 19) {
                 UUID id = { 0 };
                 id.second = strtoull(argv[i] + 3, NULL, 16);
                 NetworkRef()->id = id;
                 continue;
-            } else {
+            } else if (strlen(argv[i]) <= 35) {
                 UUID id = { 0 };
                 id.second = strtoull(argv[i] + strlen(argv[i]) - 16, NULL, 16);
                 char buf[64] = { 0 };
@@ -124,6 +130,9 @@ AppFlags GetFlagsFromArgs(int argc, const char** argv) {
                 id.first = strtoull(buf + 3, NULL, 16);
                 NetworkRef()->id = id;
                 continue;
+            } else {
+                printf("Given ID# is too long - IDs are 32 hexidecimal characters long\n");
+                exit(1);
             }
         }
         if (strcmp(argv[i], "-boot_anim") == 0) {

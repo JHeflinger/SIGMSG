@@ -22,6 +22,27 @@ ARRLIST_QueuedMessage g_send_queue = { 0 };
 BOOL g_shutdown_network = FALSE;
 Destination g_translated_destination = { 0 };
 
+BOOL cmpdate(Timestamp a, Timestamp b) {
+    if (a.year   != b.year)   return a.year   > b.year;
+    if (a.month  != b.month)  return a.month  > b.month;
+    if (a.day    != b.day)    return a.day    > b.day;
+    if (a.hour   != b.hour)   return a.hour   > b.hour;
+    if (a.minute != b.minute) return a.minute > b.minute;
+    if (a.second != b.second) return a.second > b.second;
+    return TRUE;
+}
+
+void add_message_to_history(ARRLIST_Message* history, Message msg) {
+    for (size_t i = history->size; i > 0; i--) {
+        size_t ind = i - 1;
+        if (uuideq(msg.id, history->data[ind].id)) {
+            return;
+        } else if (cmpdate(msg.time, history->data[ind].time)) {
+            ARRLIST_Message_insert(history, msg, ind + 1);
+        } 
+    }
+}
+
 void throw_punch(Destination destination) {
     ez_Buffer* buffer = EZ_GENERATE_BUFFER(sizeof(FistPacket));
     FistPacket fp = { FIST_PACKET };
@@ -46,7 +67,7 @@ void handle_message_packet(Destination destination, ez_Buffer* buffer) {
             EZ_LOCK_MUTEX((*Lock()));
             for (size_t j = 0; j < g_network.friends.size; j++) {
                 if (uuideq(g_network.friends.data[j].id, msg.from)) {
-                    ARRLIST_Message_add(&(g_network.friends.data[j].history), msg);
+                    add_message_to_history(&(g_network.friends.data[j].history), msg);
                     break;
                 }
             }
@@ -235,7 +256,6 @@ EZ_THREAD_RETURN_TYPE network_thread(EZ_THREAD_PARAMETER_TYPE params) {
                             ez_Buffer* ackbuffer = EZ_GENERATE_BUFFER(sizeof(Message));
                             EZ_RECORD_BUFFER(ebuffer, qm.message);
                             for (int j = 0; j < MAX_SEND_ATTEMPTS; j++) {
-                                //printdest(lc.destination);
                                 EZ_SERVER_THROW(g_server, lc.destination, ebuffer);
                                 Destination dest = EZ_SERVER_RECIEVE_FROM_TIMED(g_server, ackbuffer, REC_TIMEOUT);
                                 while (dest.port != 0) {
@@ -342,6 +362,7 @@ void InitializeNetwork() {
 
     User localhost = { 0 };
     strcpy(localhost.name, "Me");
+    if (g_network.id.first != 0 || g_network.id.second != 0) localhost.id = g_network.id;
     ARRLIST_User_add(&(g_network.friends), localhost);
 
     g_server = EZ_GENERATE_SERVER();

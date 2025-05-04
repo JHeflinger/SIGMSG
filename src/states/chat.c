@@ -43,8 +43,18 @@ void draw_headers() {
     }
     mvprintw(0, 1, "SIGMSG %s", SM_VERSION);
     mvprintw(0, g_width - 16, "No new messages");
+    char idbuff[64] = { 0 };
+    char padbuff[64] = { 0 };
+    sprintf(idbuff, "%" PRIx64 "%" PRIx64, g_nref->id.first, g_nref->id.second);
+    for (size_t i = 0; i < 32; i++) {
+        if (i < 32 - strlen(idbuff)) {
+            padbuff[i] = '0';
+        } else {
+            padbuff[i] = idbuff[i - (32 - strlen(idbuff))];
+        }
+    }
     if (g_nref->online) {
-        mvprintw(0, g_width/2 - 18, "ID#%" PRIx64 "%" PRIx64, g_nref->id.first, g_nref->id.second);
+        mvprintw(0, g_width/2 - 18, "ID#%s", padbuff);
     } else {
         attroff(COLOR_PAIR(BLACK_WHITE));
         attron(COLOR_PAIR(RED_WHITE));
@@ -55,10 +65,19 @@ void draw_headers() {
     mvprintw(g_height - 5, 1, "%s", g_nref->friends.data[g_selected_friend].name); 
     attroff(COLOR_PAIR(BLACK_WHITE));
     attron(COLOR_PAIR(GRAY_WHITE));
-    mvprintw(g_height - 5, 1 + strlen(g_nref->friends.data[g_selected_friend].name),
-        "#%" PRIx64 "%" PRIx64,
+    sprintf(idbuff, "%" PRIx64 "%" PRIx64,
         g_nref->friends.data[g_selected_friend].id.first,
         g_nref->friends.data[g_selected_friend].id.second);
+    for (size_t i = 0; i < 32; i++) {
+        if (i < 32 - strlen(idbuff)) {
+            padbuff[i] = '0';
+        } else {
+            padbuff[i] = idbuff[i - (32 - strlen(idbuff))];
+        }
+    }
+    mvprintw(g_height - 5, 1 + strlen(g_nref->friends.data[g_selected_friend].name),
+        "#%s",
+        padbuff);
     attroff(COLOR_PAIR(GRAY_WHITE));
 }
 
@@ -200,6 +219,8 @@ void ChatState(Event event) {
         }
     } else if (event.kevent == 8) {
         if (g_chat_state == 0 && g_chat_cursor > 0) {
+            if (g_chat_cursor >= MAX_MESSAGE_SIZE - 1) 
+                draw_headers();
             g_chat_cursor--;
             g_chat_buffer[g_chat_cursor] = '\0';
         } else if (g_chat_state == 1 && g_uuid_cursor > 0) {

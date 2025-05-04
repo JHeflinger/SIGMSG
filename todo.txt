@@ -1,18 +1,15 @@
 immediate:
-    - put in id via command line
-    - pad id with 0s in the beginning
-    - check cmdline args for unknown args and valid id arg and not too long id arg
-    - make it use private ip if on local network
-    - if recv fails then try again
-    - send only as much as needed from a message
-    - ensure no duplicate messages using mid
-    - ensure date order of messages
-    - offline messages
+    - ensure date order of messages && ensure no duplicate messages using mid during
+    - implicit add friend
     - unread messages
-    - implement move cursor around
     - lock chat sending while offline
+
+    - offline messages
     - implement sent / delivered
+    - send only as much as needed from a message
     - move sigpunch to sigmsg with proper headers and tinyconf and allat
+    - implement move cursor around
+    - timezones
     - save data
     - safe file saving
     - file save on program termination
