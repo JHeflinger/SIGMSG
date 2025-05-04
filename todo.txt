@@ -1,7 +1,4 @@
 immediate:
-    - unread messages
-    - lock chat sending while offline
-
     - improve punching
     - offline messages
     - implement sent / delivered
